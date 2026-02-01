@@ -1,46 +1,14 @@
-import { X, Check, XIcon, ChevronDown, Plus, Minus } from 'lucide-react';
-import { useState } from 'react';
+import { X, Check, XIcon, ChevronDown, Plus, Minus, Loader2, AlertCircle } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import { Order } from './order-card';
-
-interface OrderItem {
-  id: string;
-  name: string;
-  orderedQuantity: number;
-  actualQuantity: number;
-  price: number;
-  unit: string;
-  confirmed: boolean | null; // null = pending, true = confirmed, false = denied
-  image: string;
-}
+import { fetchOrderItems, updateOrderStatus, updateOrderItemQuantity, updateOrderItemConfirmation, saveOrderChanges, OrderItem } from '@/app/services/api';
+import { getOrderItems as getMockOrderItems } from '@/app/mock-order-items';
 
 interface OrderDetailsModalProps {
   order: Order;
   onClose: () => void;
+  onOrderUpdate?: (orderId: string, updates: Partial<Order>) => void;
 }
-
-// Mock order items data
-const getOrderItems = (orderCode: string): OrderItem[] => {
-  const itemsMap: Record<string, OrderItem[]> = {
-    'ORD-2024-001': [
-      { id: '1', name: 'Organic Chicken Breast', orderedQuantity: 2, actualQuantity: 2, price: 12.99, unit: 'kg', confirmed: null, image: 'https://butchershoppeteams.com/cdn/shop/products/butcher-shoppe-direct-boneless-skinless-chicken-breasts-15517883433043_1080x_266ae294-f803-4ef2-8308-0bc060f54d12.webp?v=1680630694' },
-      { id: '2', name: 'Fresh Salmon Fillet', orderedQuantity: 1.5, actualQuantity: 1.5, price: 24.99, unit: 'kg', confirmed: null, image: 'https://meat4you.ch/media/catalog/product/cache/1e5ed9cbca70cb1b2ba6633fbe65aac9/b/i/bio-lachsfilet-mit-haut-meat4you_24a1909.jpg' },
-      { id: '3', name: 'Ground Beef', orderedQuantity: 1, actualQuantity: 1, price: 15.50, unit: 'kg', confirmed: null, image: 'https://heatherlea.ca/wp-content/uploads/2022/12/DSC_0760-scaled.jpg' },
-    ],
-    'ORD-2024-002': [
-      { id: '1', name: 'Ribeye Steak', orderedQuantity: 2, actualQuantity: 2, price: 28.99, unit: 'kg', confirmed: null, image: 'https://embed.widencdn.net/img/beef/ng96sbyljl/800x600px/Ribeye%20Steak_Lip-on.psd?keep=c&u=7fueml' },
-      { id: '2', name: 'Pork Tenderloin', orderedQuantity: 1.5, actualQuantity: 1.5, price: 16.99, unit: 'kg', confirmed: null, image: 'https://cdn.woodwardmeats.com/media/product/1_Pork-Tenderloin.jpg' },
-      { id: '3', name: 'Lamb Chops', orderedQuantity: 1, actualQuantity: 1, price: 32.00, unit: 'kg', confirmed: null, image: 'https://thebutchery.ca/cdn/shop/files/IMG_0126.jpg?v=1686321240&width=800' },
-      { id: '4', name: 'Turkey Breast', orderedQuantity: 2.5, actualQuantity: 2.5, price: 14.50, unit: 'kg', confirmed: null, image: 'https://jmbutcher.mt/wp-content/uploads/2020/05/Turkey-Breast.jpg' },
-      { id: '5', name: 'Duck Breast', orderedQuantity: 0.8, actualQuantity: 0.8, price: 22.00, unit: 'kg', confirmed: null, image: 'https://www.countrystylemeats.co.uk/wp-content/uploads/2022/05/duck-breast-jpg.webp' },
-    ],
-  };
-
-  return itemsMap[orderCode] || [
-    { id: '1', name: 'Sample Product A', orderedQuantity: 2, actualQuantity: 2, price: 29.99, unit: 'kg', confirmed: null, image: 'figma:asset/3c867424c3791bfcc1f02947243b24a416a57b37.png' },
-    { id: '2', name: 'Sample Product B', orderedQuantity: 1, actualQuantity: 1, price: 49.99, unit: 'kg', confirmed: null, image: 'figma:asset/3c867424c3791bfcc1f02947243b24a416a57b37.png' },
-    { id: '3', name: 'Sample Product C', orderedQuantity: 1.5, actualQuantity: 1.5, price: 19.99, unit: 'kg', confirmed: null, image: 'figma:asset/3c867424c3791bfcc1f02947243b24a416a57b37.png' },
-  ];
-};
 
 const statusColors = {
   pending: 'bg-red-50 text-red-700 border-red-300',
@@ -51,23 +19,60 @@ const statusColors = {
 
 const statuses: Order['status'][] = ['pending', 'confirmed', 'processing', 'ready'];
 
-export function OrderDetailsModal({ order, onClose }: OrderDetailsModalProps) {
-  const [items, setItems] = useState<OrderItem[]>(getOrderItems(order.orderCode));
+export function OrderDetailsModal({ order, onClose, onOrderUpdate }: OrderDetailsModalProps) {
+  const [items, setItems] = useState<OrderItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
   const [currentStatus, setCurrentStatus] = useState(order.status);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
+  // Fetch order items from API when modal opens
+  useEffect(() => {
+    const loadItems = async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        console.log('🌐 Fetching order items for order:', order.id);
+        const fetchedItems = await fetchOrderItems(order.id);
+        console.log('✅ Fetched items from API:', fetchedItems.length);
+        setItems(fetchedItems);
+      } catch (err) {
+        console.error('❌ API failed, using hardcoded order items:', err);
+        // Fallback to hardcoded data if API fails
+        const mockItems = getMockOrderItems(order.orderCode);
+        setItems(mockItems);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadItems();
+  }, [order.id, order.orderCode]);
+
   const handleStatusChange = (newStatus: Order['status']) => {
+    // Just update local state - don't save to server yet
+    // Save will happen when "Save Changes" button is clicked
+    console.log('🔄 Status change in dropdown (local only):', { orderId: order.id, oldStatus: currentStatus, newStatus });
     setCurrentStatus(newStatus);
     setIsDropdownOpen(false);
-    // Here you would update the backend
   };
 
-  const handleQuantityChange = (itemId: string, newQuantity: string) => {
+  const handleQuantityChange = async (itemId: string, newQuantity: string) => {
     const quantity = parseFloat(newQuantity);
     if (!isNaN(quantity) && quantity >= 0) {
+      // Optimistically update UI
       setItems(items.map(item => 
         item.id === itemId ? { ...item, actualQuantity: quantity } : item
       ));
+      
+      // Update backend
+      try {
+        await updateOrderItemQuantity(order.id, itemId, quantity);
+      } catch (err) {
+        console.error('Error updating quantity:', err);
+        // Could revert on error if needed
+      }
     }
   };
 
@@ -83,16 +88,74 @@ export function OrderDetailsModal({ order, onClose }: OrderDetailsModalProps) {
     ));
   };
 
-  const handleConfirm = (itemId: string) => {
+  const handleConfirm = async (itemId: string) => {
+    const item = items.find(i => i.id === itemId);
+    if (!item) return;
+
+    // Optimistically update UI
     setItems(items.map(item => 
       item.id === itemId ? { ...item, confirmed: true } : item
     ));
+    
+    // Update backend - save both confirmation AND current quantity
+    try {
+      // First save the quantity if it changed
+      if (Math.abs(item.actualQuantity - item.orderedQuantity) > 0.01) {
+        await updateOrderItemQuantity(order.id, itemId, item.actualQuantity);
+      }
+      // Then save the confirmation
+      await updateOrderItemConfirmation(order.id, itemId, true);
+    } catch (err) {
+      console.error('Error confirming item:', err);
+      // Revert on error
+      setItems(items.map(item => 
+        item.id === itemId ? { ...item, confirmed: null } : item
+      ));
+    }
   };
 
-  const handleDeny = (itemId: string) => {
+  const handleDeny = async (itemId: string) => {
+    // Optimistically update UI
     setItems(items.map(item => 
       item.id === itemId ? { ...item, confirmed: false } : item
     ));
+    
+    // Update backend
+    try {
+      await updateOrderItemConfirmation(order.id, itemId, false);
+    } catch (err) {
+      console.error('Error denying item:', err);
+      // Revert on error
+      setItems(items.map(item => 
+        item.id === itemId ? { ...item, confirmed: null } : item
+      ));
+    }
+  };
+
+  const handleRevertConfirmation = async (itemId: string) => {
+    const item = items.find(i => i.id === itemId);
+    if (!item) return;
+
+    const previousConfirmed = item.confirmed;
+    
+    // Optimistically revert confirmation back to pending (null)
+    setItems(items.map(i => 
+      i.id === itemId ? { ...i, confirmed: null } : i
+    ));
+    
+    // Update backend - save quantity first, then revert confirmation
+    try {
+      // Save current quantity to ensure it's persisted
+      await updateOrderItemQuantity(order.id, itemId, item.actualQuantity);
+      // Revert confirmation to null
+      await updateOrderItemConfirmation(order.id, itemId, null);
+    } catch (err) {
+      console.error('Error reverting confirmation:', err);
+      // Revert on error
+      setItems(items.map(i => 
+        i.id === itemId ? { ...i, confirmed: previousConfirmed } : i
+      ));
+    }
   };
 
   const calculateTotal = () => {
@@ -183,9 +246,27 @@ export function OrderDetailsModal({ order, onClose }: OrderDetailsModalProps) {
 
         {/* Items List */}
         <div className="flex-1 overflow-y-auto px-6 py-4">
-          <div className="space-y-3">
-            {/* Item Cards */}
-            {items.map((item) => (
+          {isLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="flex flex-col items-center gap-4">
+                <Loader2 className="w-8 h-8 text-gray-400 animate-spin" />
+                <p className="text-gray-600">Loading order items...</p>
+              </div>
+            </div>
+          ) : error ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="flex flex-col items-center gap-4 max-w-md text-center">
+                <AlertCircle className="w-12 h-12 text-red-500" />
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Error Loading Items</h3>
+                  <p className="text-gray-600">{error}</p>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {/* Item Cards */}
+              {items.map((item) => (
               <div
                 key={item.id}
                 className={`bg-white border rounded-lg p-4 transition-all ${
@@ -285,15 +366,23 @@ export function OrderDetailsModal({ order, onClose }: OrderDetailsModalProps) {
                             </button>
                           </>
                         ) : item.confirmed ? (
-                          <div className="flex items-center gap-2 text-green-700 bg-green-100 px-3 py-2 rounded-lg">
+                          <button
+                            onClick={() => handleRevertConfirmation(item.id)}
+                            className="flex items-center gap-2 text-green-700 bg-green-100 hover:bg-green-200 px-3 py-2 rounded-lg transition-colors cursor-pointer"
+                            title="Click to revert confirmation"
+                          >
                             <Check className="w-4 h-4" />
                             <span className="text-sm font-medium">Confirmed</span>
-                          </div>
+                          </button>
                         ) : (
-                          <div className="flex items-center gap-2 text-red-700 bg-red-100 px-3 py-2 rounded-lg">
+                          <button
+                            onClick={() => handleRevertConfirmation(item.id)}
+                            className="flex items-center gap-2 text-red-700 bg-red-100 hover:bg-red-200 px-3 py-2 rounded-lg transition-colors cursor-pointer"
+                            title="Click to revert denial"
+                          >
                             <XIcon className="w-4 h-4" />
                             <span className="text-sm font-medium">Denied</span>
-                          </div>
+                          </button>
                         )}
                       </div>
                     </div>
@@ -301,7 +390,8 @@ export function OrderDetailsModal({ order, onClose }: OrderDetailsModalProps) {
                 </div>
               </div>
             ))}
-          </div>
+            </div>
+          )}
 
           {/* Total Section */}
           <div className="mt-6 pt-4 border-t-2 border-gray-300">
@@ -335,8 +425,47 @@ export function OrderDetailsModal({ order, onClose }: OrderDetailsModalProps) {
             Close
           </button>
           <button
-            className="px-4 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
+            onClick={async () => {
+              setIsSaving(true);
+              try {
+                console.log('💾 Save Changes clicked:', { orderId: order.id, status: currentStatus, itemsCount: items.length });
+                
+                // First, save the status to the server if it changed
+                if (currentStatus !== order.status) {
+                  console.log('📤 Saving status change:', { from: order.status, to: currentStatus });
+                  await updateOrderStatus(order.id, currentStatus);
+                }
+                
+                // Then save all order changes (items and status)
+                console.log('💾 Saving order changes...');
+                await saveOrderChanges(order.id, items, currentStatus);
+                console.log('✅ All changes saved to server');
+                
+                // Update parent state - this will update the main board
+                if (onOrderUpdate) {
+                  console.log('🔄 Updating parent state with new status:', currentStatus);
+                  onOrderUpdate(order.id, { status: currentStatus });
+                } else {
+                  console.warn('⚠️ onOrderUpdate not provided!');
+                }
+                
+                // Small delay to ensure state update propagates, then close modal
+                // The parent's handleOrderModalClose will refresh orders from server
+                setTimeout(() => {
+                  console.log('🚪 Closing modal - parent will refresh');
+                  onClose();
+                }, 100);
+              } catch (err) {
+                console.error('❌ Error saving changes:', err);
+                alert('Failed to save changes. Please try again.');
+              } finally {
+                setIsSaving(false);
+              }
+            }}
+            disabled={isSaving || isLoading}
+            className="px-4 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
           >
+            {isSaving && <Loader2 className="w-4 h-4 animate-spin" />}
             Save Changes
           </button>
         </div>

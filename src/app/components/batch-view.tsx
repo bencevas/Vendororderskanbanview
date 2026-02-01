@@ -1,6 +1,7 @@
-import { Check, XIcon, Plus, Minus } from 'lucide-react';
-import { useState } from 'react';
+import { Check, XIcon, Plus, Minus, Loader2, AlertCircle } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import { Order } from './order-card';
+import { fetchOrderItems, updateOrderItemQuantity, updateOrderItemConfirmation, OrderItem } from '@/app/services/api';
 
 interface BatchItem {
   itemName: string;
@@ -8,6 +9,8 @@ interface BatchItem {
   unit: string;
   instances: {
     id: string;
+    orderId: string;
+    itemId: string;
     orderCode: string;
     customerName: string;
     orderedQuantity: number;
@@ -20,69 +23,102 @@ interface BatchItem {
 interface BatchViewProps {
   orders: Order[];
   date: Date;
+  onOrderUpdate?: (orderId: string, updates: Partial<Order>) => void;
 }
 
-// Helper to get all items from all orders
-const getOrderItems = (orderCode: string) => {
-  const itemsMap: Record<string, any[]> = {
-    'ORD-2024-001': [
-      { name: 'Organic Chicken Breast', orderedQuantity: 2, price: 12.99, unit: 'kg', image: 'https://butchershoppeteams.com/cdn/shop/products/butcher-shoppe-direct-boneless-skinless-chicken-breasts-15517883433043_1080x_266ae294-f803-4ef2-8308-0bc060f54d12.webp?v=1680630694' },
-      { name: 'Fresh Salmon Fillet', orderedQuantity: 1.5, price: 24.99, unit: 'kg', image: 'https://meat4you.ch/media/catalog/product/cache/1e5ed9cbca70cb1b2ba6633fbe65aac9/b/i/bio-lachsfilet-mit-haut-meat4you_24a1909.jpg' },
-      { name: 'Ground Beef', orderedQuantity: 1, price: 15.50, unit: 'kg', image: 'https://heatherlea.ca/wp-content/uploads/2022/12/DSC_0760-scaled.jpg' },
-    ],
-    'ORD-2024-002': [
-      { name: 'Organic Chicken Breast', orderedQuantity: 1.5, price: 12.99, unit: 'kg', image: 'https://butchershoppeteams.com/cdn/shop/products/butcher-shoppe-direct-boneless-skinless-chicken-breasts-15517883433043_1080x_266ae294-f803-4ef2-8308-0bc060f54d12.webp?v=1680630694' },
-      { name: 'Ribeye Steak', orderedQuantity: 2, price: 28.99, unit: 'kg', image: 'https://embed.widencdn.net/img/beef/ng96sbyljl/800x600px/Ribeye%20Steak_Lip-on.psd?keep=c&u=7fueml' },
-      { name: 'Ground Beef', orderedQuantity: 2, price: 15.50, unit: 'kg', image: 'https://heatherlea.ca/wp-content/uploads/2022/12/DSC_0760-scaled.jpg' },
-    ],
-    'ORD-2024-003': [
-      { name: 'Organic Chicken Breast', orderedQuantity: 2.5, price: 12.99, unit: 'kg', image: 'https://butchershoppeteams.com/cdn/shop/products/butcher-shoppe-direct-boneless-skinless-chicken-breasts-15517883433043_1080x_266ae294-f803-4ef2-8308-0bc060f54d12.webp?v=1680630694' },
-      { name: 'Fresh Salmon Fillet', orderedQuantity: 1, price: 24.99, unit: 'kg', image: 'https://meat4you.ch/media/catalog/product/cache/1e5ed9cbca70cb1b2ba6633fbe65aac9/b/i/bio-lachsfilet-mit-haut-meat4you_24a1909.jpg' },
-      { name: 'Pork Tenderloin', orderedQuantity: 1.5, price: 16.99, unit: 'kg', image: 'https://cdn.woodwardmeats.com/media/product/1_Pork-Tenderloin.jpg' },
-    ],
-  };
+export function BatchView({ orders, date, onOrderUpdate }: BatchViewProps) {
+  const [batchItems, setBatchItems] = useState<BatchItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  return itemsMap[orderCode] || [];
-};
+  // Fetch all order items and group them
+  useEffect(() => {
+    const loadBatchItems = async () => {
+      setIsLoading(true);
+      setError(null);
+      
+      try {
+        const itemsMap = new Map<string, BatchItem>();
 
-export function BatchView({ orders, date }: BatchViewProps) {
-  // Group items by item name
-  const [batchItems, setBatchItems] = useState<BatchItem[]>(() => {
-    const itemsMap = new Map<string, BatchItem>();
+        // Fetch items for all orders in parallel
+        const itemsPromises = orders.map(order => 
+          fetchOrderItems(order.id).catch(err => {
+            console.error(`Error fetching items for order ${order.id}:`, err);
+            return [];
+          })
+        );
+        
+        const allOrderItems = await Promise.all(itemsPromises);
 
-    orders.forEach((order) => {
-      const orderItems = getOrderItems(order.orderCode);
-      orderItems.forEach((item, index) => {
-        const existing = itemsMap.get(item.name);
-        const instance = {
-          id: `${order.orderCode}-${index}`,
-          orderCode: order.orderCode,
-          customerName: order.customerName,
-          orderedQuantity: item.orderedQuantity,
-          actualQuantity: item.orderedQuantity,
-          price: item.price,
-          confirmed: null as boolean | null,
-        };
+        // Group items by name - identical items from different orders are grouped together
+        orders.forEach((order, orderIndex) => {
+          const orderItems = allOrderItems[orderIndex];
+          console.log(`📦 Processing order ${order.orderCode} with ${orderItems.length} items`);
+          
+          orderItems.forEach((item, itemIndex) => {
+            const existing = itemsMap.get(item.name);
+            const instance = {
+              id: `${order.id}-${item.id}`,
+              orderId: order.id,
+              itemId: item.id,
+              orderCode: order.orderCode,
+              customerName: order.customerName,
+              orderedQuantity: item.orderedQuantity,
+              actualQuantity: item.actualQuantity,
+              price: item.price,
+              confirmed: item.confirmed,
+            };
 
-        if (existing) {
-          existing.instances.push(instance);
-        } else {
-          itemsMap.set(item.name, {
-            itemName: item.name,
-            image: item.image,
-            unit: item.unit,
-            instances: [instance],
+            if (existing) {
+              // Add to existing batch group
+              existing.instances.push(instance);
+              console.log(`➕ Added ${item.name} to existing batch (${existing.instances.length} instances)`);
+            } else {
+              // Create new batch group
+              itemsMap.set(item.name, {
+                itemName: item.name,
+                image: item.image,
+                unit: item.unit,
+                instances: [instance],
+              });
+              console.log(`🆕 Created new batch group for ${item.name}`);
+            }
           });
-        }
-      });
-    });
+        });
 
-    return Array.from(itemsMap.values());
-  });
+        const groupedItems = Array.from(itemsMap.values());
+        console.log(`✅ Batch view: ${groupedItems.length} unique items grouped from ${orders.length} orders`);
+        groupedItems.forEach(item => {
+          console.log(`  - ${item.itemName}: ${item.instances.length} order(s)`);
+        });
+        setBatchItems(groupedItems);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to load batch items');
+        console.error('Error loading batch items:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-  const handleQuantityChange = (itemName: string, instanceId: string, newQuantity: string) => {
+    if (orders.length > 0) {
+      loadBatchItems();
+    } else {
+      setBatchItems([]);
+      setIsLoading(false);
+    }
+  }, [orders]);
+
+  const handleQuantityChange = async (itemName: string, instanceId: string, newQuantity: string) => {
     const quantity = parseFloat(newQuantity);
     if (!isNaN(quantity) && quantity >= 0) {
+      // Find the instance to get orderId and itemId
+      const instance = batchItems
+        .find(item => item.itemName === itemName)
+        ?.instances.find(inst => inst.id === instanceId);
+      
+      if (!instance) return;
+
+      // Optimistically update UI
       setBatchItems(
         batchItems.map((item) =>
           item.itemName === itemName
@@ -95,6 +131,13 @@ export function BatchView({ orders, date }: BatchViewProps) {
             : item
         )
       );
+
+      // Update backend
+      try {
+        await updateOrderItemQuantity(instance.orderId, instance.itemId, quantity);
+      } catch (err) {
+        console.error('Error updating quantity:', err);
+      }
     }
   };
 
@@ -132,7 +175,14 @@ export function BatchView({ orders, date }: BatchViewProps) {
     );
   };
 
-  const handleConfirm = (itemName: string, instanceId: string) => {
+  const handleConfirm = async (itemName: string, instanceId: string) => {
+    const instance = batchItems
+      .find(item => item.itemName === itemName)
+      ?.instances.find(inst => inst.id === instanceId);
+    
+    if (!instance) return;
+
+    // Optimistically update UI
     setBatchItems(
       batchItems.map((item) =>
         item.itemName === itemName
@@ -145,9 +195,36 @@ export function BatchView({ orders, date }: BatchViewProps) {
           : item
       )
     );
+
+    // Update backend
+    try {
+      await updateOrderItemConfirmation(instance.orderId, instance.itemId, true);
+    } catch (err) {
+      console.error('Error confirming item:', err);
+      // Revert on error
+      setBatchItems(
+        batchItems.map((item) =>
+          item.itemName === itemName
+            ? {
+                ...item,
+                instances: item.instances.map((inst) =>
+                  inst.id === instanceId ? { ...inst, confirmed: null } : inst
+                ),
+              }
+            : item
+        )
+      );
+    }
   };
 
-  const handleDeny = (itemName: string, instanceId: string) => {
+  const handleDeny = async (itemName: string, instanceId: string) => {
+    const instance = batchItems
+      .find(item => item.itemName === itemName)
+      ?.instances.find(inst => inst.id === instanceId);
+    
+    if (!instance) return;
+
+    // Optimistically update UI
     setBatchItems(
       batchItems.map((item) =>
         item.itemName === itemName
@@ -160,19 +237,66 @@ export function BatchView({ orders, date }: BatchViewProps) {
           : item
       )
     );
+
+    // Update backend
+    try {
+      await updateOrderItemConfirmation(instance.orderId, instance.itemId, false);
+    } catch (err) {
+      console.error('Error denying item:', err);
+      // Revert on error
+      setBatchItems(
+        batchItems.map((item) =>
+          item.itemName === itemName
+            ? {
+                ...item,
+                instances: item.instances.map((inst) =>
+                  inst.id === instanceId ? { ...inst, confirmed: null } : inst
+                ),
+              }
+            : item
+        )
+      );
+    }
   };
 
-  const confirmAllForItem = (itemName: string) => {
+  const confirmAllForItem = async (itemName: string) => {
+    const item = batchItems.find(i => i.itemName === itemName);
+    if (!item) return;
+
+    // Optimistically update UI
     setBatchItems(
-      batchItems.map((item) =>
-        item.itemName === itemName
+      batchItems.map((batchItem) =>
+        batchItem.itemName === itemName
           ? {
-              ...item,
-              instances: item.instances.map((inst) => ({ ...inst, confirmed: true })),
+              ...batchItem,
+              instances: batchItem.instances.map((inst) => ({ ...inst, confirmed: true })),
             }
-          : item
+          : batchItem
       )
     );
+
+    // Update backend for all instances
+    try {
+      await Promise.all(
+        item.instances.map(instance =>
+          updateOrderItemConfirmation(instance.orderId, instance.itemId, true)
+        )
+      );
+      console.log(`✅ Confirmed all ${item.instances.length} instances of ${itemName}`);
+    } catch (err) {
+      console.error('Error confirming all items:', err);
+      // Revert on error
+      setBatchItems(
+        batchItems.map((batchItem) =>
+          batchItem.itemName === itemName
+            ? {
+                ...batchItem,
+                instances: batchItem.instances.map((inst) => ({ ...inst, confirmed: null })),
+              }
+            : batchItem
+        )
+      );
+    }
   };
 
   const getTotalQuantityForItem = (item: BatchItem) => {
@@ -196,8 +320,30 @@ export function BatchView({ orders, date }: BatchViewProps) {
         </p>
       </div>
 
-      <div className="space-y-6">
-        {batchItems.map((item) => (
+      {isLoading ? (
+        <div className="flex items-center justify-center py-12">
+          <div className="flex flex-col items-center gap-4">
+            <Loader2 className="w-8 h-8 text-gray-400 animate-spin" />
+            <p className="text-gray-600">Loading batch items...</p>
+          </div>
+        </div>
+      ) : error ? (
+        <div className="flex items-center justify-center py-12">
+          <div className="flex flex-col items-center gap-4 max-w-md text-center">
+            <AlertCircle className="w-12 h-12 text-red-500" />
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Error Loading Items</h3>
+              <p className="text-gray-600">{error}</p>
+            </div>
+          </div>
+        </div>
+      ) : batchItems.length === 0 ? (
+        <div className="flex items-center justify-center py-12">
+          <p className="text-gray-500">No items found for this date</p>
+        </div>
+      ) : (
+        <div className="space-y-6">
+          {batchItems.map((item) => (
           <div key={item.itemName} className="bg-white border border-gray-200 rounded-lg p-5">
             {/* Item Header */}
             <div className="flex items-start justify-between mb-4 pb-4 border-b border-gray-200">
@@ -332,7 +478,8 @@ export function BatchView({ orders, date }: BatchViewProps) {
             </div>
           </div>
         ))}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

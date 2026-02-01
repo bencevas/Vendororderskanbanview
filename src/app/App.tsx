@@ -1,158 +1,65 @@
-import { useState } from 'react';
-import { ChevronLeft, ChevronRight, Calendar, LayoutGrid, List, User, Settings, LogOut, Bell, HelpCircle, ChevronDown } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { ChevronLeft, ChevronRight, Calendar, LayoutGrid, List, User, Settings, LogOut, Bell, HelpCircle, ChevronDown, Loader2, AlertCircle } from 'lucide-react';
 import { format, addDays, startOfDay, isSameDay } from 'date-fns';
 import { OrderCard, Order } from '@/app/components/order-card';
 import { OrderDetailsModal } from '@/app/components/order-details-modal';
 import { BatchView } from '@/app/components/batch-view';
-
-// Mock order data
-const generateMockOrders = (): Order[] => {
-  const baseDate = startOfDay(new Date());
-  
-  return [
-    // Today
-    {
-      id: '1',
-      orderCode: 'ORD-2024-001',
-      customerName: 'John Smith',
-      itemCount: 3,
-      totalAmount: 124.99,
-      status: 'pending',
-      deliveryDate: baseDate,
-    },
-    {
-      id: '2',
-      orderCode: 'ORD-2024-002',
-      customerName: 'Emma Johnson',
-      itemCount: 5,
-      totalAmount: 289.50,
-      status: 'confirmed',
-      deliveryDate: baseDate,
-    },
-    {
-      id: '3',
-      orderCode: 'ORD-2024-003',
-      customerName: 'Michael Brown',
-      itemCount: 2,
-      totalAmount: 89.99,
-      status: 'processing',
-      deliveryDate: baseDate,
-    },
-    
-    // Tomorrow
-    {
-      id: '4',
-      orderCode: 'ORD-2024-004',
-      customerName: 'Sarah Davis',
-      itemCount: 7,
-      totalAmount: 456.75,
-      status: 'confirmed',
-      deliveryDate: addDays(baseDate, 1),
-    },
-    {
-      id: '5',
-      orderCode: 'ORD-2024-005',
-      customerName: 'David Wilson',
-      itemCount: 1,
-      totalAmount: 49.99,
-      status: 'pending',
-      deliveryDate: addDays(baseDate, 1),
-    },
-    
-    // Day 2
-    {
-      id: '6',
-      orderCode: 'ORD-2024-006',
-      customerName: 'Jessica Martinez',
-      itemCount: 4,
-      totalAmount: 199.99,
-      status: 'confirmed',
-      deliveryDate: addDays(baseDate, 2),
-    },
-    {
-      id: '7',
-      orderCode: 'ORD-2024-007',
-      customerName: 'Robert Taylor',
-      itemCount: 6,
-      totalAmount: 342.00,
-      status: 'ready',
-      deliveryDate: addDays(baseDate, 2),
-    },
-    {
-      id: '8',
-      orderCode: 'ORD-2024-008',
-      customerName: 'Amanda Anderson',
-      itemCount: 3,
-      totalAmount: 156.25,
-      status: 'processing',
-      deliveryDate: addDays(baseDate, 2),
-    },
-    
-    // Day 3
-    {
-      id: '9',
-      orderCode: 'ORD-2024-009',
-      customerName: 'Christopher Lee',
-      itemCount: 8,
-      totalAmount: 523.40,
-      status: 'confirmed',
-      deliveryDate: addDays(baseDate, 3),
-    },
-    {
-      id: '10',
-      orderCode: 'ORD-2024-010',
-      customerName: 'Michelle White',
-      itemCount: 2,
-      totalAmount: 78.50,
-      status: 'pending',
-      deliveryDate: addDays(baseDate, 3),
-    },
-    
-    // Day 4
-    {
-      id: '11',
-      orderCode: 'ORD-2024-011',
-      customerName: 'James Harris',
-      itemCount: 5,
-      totalAmount: 267.80,
-      status: 'confirmed',
-      deliveryDate: addDays(baseDate, 4),
-    },
-    {
-      id: '12',
-      orderCode: 'ORD-2024-012',
-      customerName: 'Lisa Thompson',
-      itemCount: 3,
-      totalAmount: 145.99,
-      status: 'pending',
-      deliveryDate: addDays(baseDate, 4),
-    },
-    {
-      id: '13',
-      orderCode: 'ORD-2024-013',
-      customerName: 'Daniel Garcia',
-      itemCount: 4,
-      totalAmount: 234.00,
-      status: 'ready',
-      deliveryDate: addDays(baseDate, 4),
-    },
-  ];
-};
+import { fetchOrders } from '@/app/services/api';
+import { generateMockOrders } from '@/app/mock-data';
 
 export default function App() {
   const [startDate, setStartDate] = useState(startOfDay(new Date()));
-  const [orders] = useState(generateMockOrders());
+  // Start with empty array - will fetch from API
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [viewMode, setViewMode] = useState<'kanban' | 'batch'>('kanban');
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0); // Force re-render key
   
   // Generate array of 5 consecutive days starting from startDate
   const days = Array.from({ length: 5 }, (_, i) => addDays(startDate, i));
   
-  // Filter orders by date
-  const getOrdersForDate = (date: Date) => {
-    return orders.filter(order => isSameDay(order.deliveryDate, date));
-  };
+  // Fetch orders from API when startDate changes
+  useEffect(() => {
+    const loadOrders = async () => {
+      setIsLoading(true);
+      setError(null);
+      
+      try {
+        // Fetch from API server
+        const endDate = addDays(startDate, 4);
+        const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
+        console.log('🌐 Fetching orders from API:', `${apiUrl}/orders`);
+        console.log('📅 Date range:', { startDate: startDate.toISOString(), endDate: endDate.toISOString() });
+        
+        const fetchedOrders = await fetchOrders(startDate, endDate);
+        console.log('✅ Successfully fetched', fetchedOrders.length, 'orders from API');
+        console.log('📦 Orders:', fetchedOrders);
+        setOrders(fetchedOrders);
+      } catch (err) {
+        console.error('❌ API Error:', err);
+        const errorMessage = err instanceof Error ? err.message : 'Failed to load orders from API';
+        setError(errorMessage);
+        // Only use hardcoded data as last resort
+        console.warn('⚠️ Falling back to hardcoded data');
+        const mockOrders = generateMockOrders();
+        setOrders(mockOrders);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadOrders();
+  }, [startDate]);
+  
+  // Filter orders by date - this will automatically use the latest orders from state
+  const getOrdersForDate = useCallback((date: Date) => {
+    const filtered = orders.filter(order => isSameDay(order.deliveryDate, date));
+    console.log('📅 getOrdersForDate:', { date: date.toISOString(), count: filtered.length, orders: filtered.map(o => ({ id: o.id, status: o.status })) });
+    return filtered;
+  }, [orders]);
   
   const handlePrevious = () => {
     setStartDate(prev => addDays(prev, -1));
@@ -170,6 +77,66 @@ export default function App() {
   };
   
   const isToday = (date: Date) => isSameDay(date, new Date());
+  
+  // Update order in the orders array (for state management across screens)
+  const updateOrderInState = useCallback((orderId: string, updates: Partial<Order>) => {
+    console.log('🔄 updateOrderInState called:', { orderId, updates });
+    
+    // Update the orders array - this will trigger re-render of all OrderCards
+    setOrders(prevOrders => {
+      const found = prevOrders.find(o => o.id === orderId);
+      console.log('📋 Current order in state:', found);
+      
+      const updated = prevOrders.map(order => {
+        if (order.id === orderId) {
+          const newOrder = { ...order, ...updates };
+          console.log('🔄 Updating order:', { old: order, new: newOrder });
+          return newOrder;
+        }
+        return order;
+      });
+      
+      const updatedOrder = updated.find(o => o.id === orderId);
+      console.log('✅ Updated orders state - new order:', updatedOrder);
+      console.log('📊 Total orders:', updated.length);
+      return updated;
+    });
+    
+    // Also update selected order if it's the one being updated
+    // This ensures the modal shows the updated status immediately
+    setSelectedOrder(prev => {
+      if (prev?.id === orderId) {
+        const updated = { ...prev, ...updates };
+        console.log('✅ Updated selected order:', updated);
+        return updated;
+      }
+      return prev;
+    });
+    
+    // Force a re-render by updating the refresh key
+    setRefreshKey(prev => prev + 1);
+    console.log('🔄 Refresh key updated to force re-render');
+  }, []);
+
+  // Refresh orders from API
+  const refreshOrders = async () => {
+    try {
+      const endDate = addDays(startDate, 4);
+      const fetchedOrders = await fetchOrders(startDate, endDate);
+      setOrders(fetchedOrders);
+    } catch (err) {
+      console.error('Error refreshing orders:', err);
+    }
+  };
+
+  // Refresh orders after modal closes (in case changes were made)
+  const handleOrderModalClose = async () => {
+    console.log('🚪 Modal closing, refreshing orders from server...');
+    setSelectedOrder(null);
+    // Refresh to get latest data from server
+    await refreshOrders();
+    console.log('✅ Orders refreshed after modal close');
+  };
   
   return (
     <div className="min-h-screen bg-gray-50">
@@ -314,15 +281,43 @@ export default function App() {
       </div>
       
       {/* Main Content Area */}
-      {viewMode === 'kanban' ? (
+      {isLoading ? (
+        <div className="max-w-[1600px] mx-auto px-6 py-12 flex items-center justify-center">
+          <div className="flex flex-col items-center gap-4">
+            <Loader2 className="w-8 h-8 text-gray-400 animate-spin" />
+            <p className="text-gray-600">Loading orders...</p>
+          </div>
+        </div>
+      ) : error ? (
+        <div className="max-w-[1600px] mx-auto px-6 py-12 flex items-center justify-center">
+          <div className="flex flex-col items-center gap-4 max-w-md text-center">
+            <AlertCircle className="w-12 h-12 text-red-500" />
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Error Loading Orders</h3>
+              <p className="text-gray-600 mb-4">{error}</p>
+              <button
+                onClick={() => {
+                  const endDate = addDays(startDate, 4);
+                  fetchOrders(startDate, endDate)
+                    .then(setOrders)
+                    .catch(err => setError(err instanceof Error ? err.message : 'Failed to load orders'));
+                }}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Retry
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : viewMode === 'kanban' ? (
         <div className="max-w-[1600px] mx-auto px-6 py-6">
-          <div className="flex gap-4 overflow-x-auto pb-4">
+          <div className="flex gap-4 overflow-x-auto pb-4" key={refreshKey}>
             {days.map((day, index) => {
               const dayOrders = getOrdersForDate(day);
               
               return (
                 <div
-                  key={day.toISOString()}
+                  key={`${day.toISOString()}-${refreshKey}`}
                   className="flex-shrink-0 w-80 bg-gray-100 rounded-lg p-4"
                 >
                   {/* Column Header */}
@@ -343,13 +338,21 @@ export default function App() {
                   {/* Orders */}
                   <div className="space-y-3">
                     {dayOrders.length > 0 ? (
-                      dayOrders.map(order => (
-                        <OrderCard 
-                          key={order.id} 
-                          order={order}
-                          onClick={() => setSelectedOrder(order)}
-                        />
-                      ))
+                      dayOrders.map(order => {
+                        // dayOrders comes from getOrdersForDate which uses latest orders state
+                        // Include status in key to force re-render when status changes
+                        return (
+                          <OrderCard 
+                            key={`${order.id}-${order.status}`}
+                            order={order}
+                            onClick={() => {
+                              // Get the latest order from state
+                              const latestOrder = orders.find(o => o.id === order.id) || order;
+                              setSelectedOrder(latestOrder);
+                            }}
+                          />
+                        );
+                      })
                     ) : (
                       <div className="text-center py-8 text-gray-500 text-sm">
                         No orders scheduled
@@ -363,15 +366,24 @@ export default function App() {
         </div>
       ) : (
         <div className="max-w-[1600px] mx-auto h-[calc(100vh-200px)]">
-          <BatchView orders={getOrdersForDate(startDate)} date={startDate} />
+          <BatchView 
+            orders={getOrdersForDate(startDate)} 
+            date={startDate}
+            onOrderUpdate={updateOrderInState}
+          />
         </div>
       )}
       
       {/* Order Details Modal */}
       {selectedOrder && (
         <OrderDetailsModal 
+          key={selectedOrder.id}
           order={selectedOrder}
-          onClose={() => setSelectedOrder(null)}
+          onClose={handleOrderModalClose}
+          onOrderUpdate={(orderId, updates) => {
+            console.log('🎯 onOrderUpdate received in App:', { orderId, updates });
+            updateOrderInState(orderId, updates);
+          }}
         />
       )}
     </div>
