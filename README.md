@@ -1,122 +1,174 @@
+# Vendor Orders Kanban View
 
-  # Vendor Orders Kanban View
+A vendor order management application for local food businesses. This app allows vendors to view, manage, and fulfill orders from webshops, with features for batch picking and real-time order updates.
 
-  This is a code bundle for Vendor Orders Kanban View. The original project is available at https://www.figma.com/design/gQHswhOTDcCrLmyl4ginEp/Vendor-Orders-Kanban-View.
+## Features
 
-  ## Running the code
+- **Kanban Board**: View orders organized by delivery date in a 5-day scrollable view
+- **Order Details Modal**: View and edit individual order items, update quantities, confirm/deny items
+- **Batch Pick View**: Group identical items across orders for efficient batch picking
+- **Real-time Updates**: Orders sync automatically across all connected clients (with Supabase)
+- **Test Payload Generator**: Create test orders using Shopify webhook format
+- **Authentication**: Role-based access control (Super Admin, Owner, Member)
 
-  ### Installation
+## Quick Start
 
-  Run `npm i` to install the dependencies.
+### Installation
 
-  ### Running with Mock Server
+```bash
+npm install
+```
 
-  A mock server is included with all the original dummy data. To run both the frontend and mock server together:
+### Running with Mock Server (Development)
 
-  ```bash
-  npm run dev:all
-  ```
+```bash
+# Run both frontend and mock server
+npm run dev:all
 
-  This will start:
-  - Mock API server on `http://localhost:3000`
-  - Frontend dev server on `http://localhost:5173`
+# Or run separately:
+npm run server  # Terminal 1: Mock API on http://localhost:3000
+npm run dev     # Terminal 2: Frontend on http://localhost:5173
+```
 
-  Or run them separately:
+### Running with Supabase (Production)
 
-  ```bash
-  # Terminal 1: Start the mock server
-  npm run server
+1. Create a Supabase project at [supabase.com](https://supabase.com)
 
-  # Terminal 2: Start the frontend
-  npm run dev
-  ```
+2. Run the database migrations in Supabase SQL Editor:
+   - `supabase/migrations/001_initial_schema.sql`
+   - `supabase/migrations/002_seed_data.sql` (optional test data)
+   - `supabase/migrations/003_rls_policies.sql`
 
-  ### Running with Your Own Backend
+3. Create `.env.local` with your Supabase credentials:
+   ```
+   VITE_SUPABASE_URL=https://your-project.supabase.co
+   VITE_SUPABASE_ANON_KEY=your-anon-key
+   ```
 
-  If you have your own backend API, set the `VITE_API_BASE_URL` environment variable:
+4. Run the frontend:
+   ```bash
+   npm run dev
+   ```
 
-  ```bash
-  # Create a .env file
-  VITE_API_BASE_URL=http://your-api-url.com/api
-  npm run dev
-  ```
+## Architecture
 
-  ## Backend API Integration
+### Tech Stack
 
-  This application now fetches data from a backend API instead of using mock data. 
+- **Frontend**: React + Vite + TypeScript + Tailwind CSS + shadcn/ui
+- **Backend Options**:
+  - Mock Server (Express.js) for development
+  - Supabase (PostgreSQL) for production
+- **UI Design**: Generated with [ui-ux-pro-max-skill](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill)
 
-  ### Configuration
+### Database Schema
 
-  Set the `VITE_API_BASE_URL` environment variable to point to your backend API:
+```
+super_admins     users              orders             order_items
+------------     -----              ------             -----------
+id (PK)          id (PK)            id (PK)            id (PK)
+user_id (FK)     email              order_code         order_id (FK)
+role             name               shopify_order_id   product_name
+created_at       role               customer_name      product_sku
+                 store_id           customer_email     ordered_quantity
+                 created_at         total_amount       actual_quantity
+                                    status             unit
+                                    delivery_date      price
+                                    vendor_id (FK)     confirmed
+                                    created_at         image_url
+```
 
-  ```bash
-  # Create a .env file in the root directory
-  VITE_API_BASE_URL=http://localhost:3000/api
-  ```
+### API Endpoints
 
-  If not set, it defaults to `http://localhost:3000/api`.
+#### Orders
+- `GET /api/orders?startDate=&endDate=` - Fetch orders for date range
+- `GET /api/orders/:id` - Fetch single order
+- `PATCH /api/orders/:id/status` - Update order status
+- `PATCH /api/orders/:id` - Bulk update order and items
 
-  ### API Endpoints
+#### Order Items
+- `GET /api/orders/:id/items` - Fetch order items
+- `PATCH /api/orders/:orderId/items/:itemId` - Update item quantity
+- `PATCH /api/orders/:orderId/items/:itemId/confirm` - Confirm/deny item
 
-  The application expects the following API endpoints:
+## Test Payload Generator
 
-  #### Orders
-  - `GET /api/orders?startDate={isoDate}&endDate={isoDate}` - Fetch orders for a date range
-  - `GET /api/orders/:id` - Fetch a single order by ID
-  - `PATCH /api/orders/:id/status` - Update order status
-  - `PATCH /api/orders/:id` - Save all changes for an order (bulk update)
+Click the "+ Test Order" button in the header to generate test orders using Shopify webhook format. This allows you to:
 
-  #### Order Items
-  - `GET /api/orders/:id/items` - Fetch items for an order
-  - `PATCH /api/orders/:orderId/items/:itemId` - Update item quantity
-  - `PATCH /api/orders/:orderId/items/:itemId/confirm` - Confirm or deny an item
+- Create orders with sample products and customers
+- Set custom delivery dates
+- Preview the Shopify-formatted JSON payload
+- Submit directly to Supabase (when configured)
 
-  ### Data Models
+### Shopify Webhook Integration
 
-  #### Order
-  ```typescript
-  {
-    id: string;
-    orderCode: string;
-    customerName: string;
-    itemCount: number;
-    totalAmount: number;
-    status: 'pending' | 'confirmed' | 'processing' | 'ready';
-    deliveryDate: string; // ISO date string
-  }
-  ```
+Deploy the Edge Function to receive real Shopify webhooks:
 
-  #### OrderItem
-  ```typescript
-  {
-    id: string;
-    name: string;
-    orderedQuantity: number;
-    actualQuantity: number;
-    price: number;
-    unit: string;
-    confirmed: boolean | null; // null = pending, true = confirmed, false = denied
-    image: string;
-  }
-  ```
+```bash
+supabase functions deploy shopify-webhook
+```
 
-  ### Features
+Configure your Shopify store to send `orders/create` webhooks to:
+```
+https://your-project.supabase.co/functions/v1/shopify-webhook
+```
 
-  - ✅ Fetches orders from backend API
-  - ✅ Fetches order items from backend API
-  - ✅ Updates order status in real-time
-  - ✅ Updates item quantities and confirmations
-  - ✅ Loading states and error handling
-  - ✅ Optimistic UI updates
+## Design System
 
-  ## Mock Server
+The app uses a custom design system generated with ui-ux-pro-max-skill:
 
-  The mock server (`server/server.js`) provides a complete API implementation with all the original dummy data. It includes:
+- **Primary Color**: #2563EB (Blue)
+- **CTA Color**: #F97316 (Orange)
+- **Typography**: Playfair Display SC / Karla
+- **Style**: Vibrant & Block-based
 
-  - All 13 mock orders with dates spanning 5 days
-  - Order items for each order
-  - Full CRUD operations for orders and items
-  - In-memory storage (data resets on server restart)
+See `design-system/vendororders/MASTER.md` for full design tokens.
 
-  The server runs on `http://localhost:3000` and provides all the endpoints documented above.
-  
+## Project Structure
+
+```
+src/
+├── app/
+│   ├── components/
+│   │   ├── auth/               # Login form
+│   │   ├── test-generator/     # Test payload generator
+│   │   ├── ui/                 # shadcn/ui components
+│   │   ├── batch-view.tsx      # Batch pick view
+│   │   ├── order-card.tsx      # Order card component
+│   │   └── order-details-modal.tsx
+│   ├── contexts/
+│   │   ├── AuthContext.tsx     # Authentication state
+│   │   └── OrdersContext.tsx   # Orders state
+│   ├── hooks/
+│   │   └── useRealtimeOrders.ts # Supabase realtime hook
+│   ├── services/
+│   │   ├── api.ts              # API functions
+│   │   └── supabase.ts         # Supabase client
+│   ├── types/
+│   │   └── database.ts         # TypeScript types
+│   └── App.tsx
+├── styles/
+│   └── tailwind.css
+server/
+└── server.js                   # Mock API server
+supabase/
+├── functions/
+│   └── shopify-webhook/        # Edge function for webhooks
+└── migrations/
+    ├── 001_initial_schema.sql
+    ├── 002_seed_data.sql
+    └── 003_rls_policies.sql
+design-system/
+└── vendororders/
+    └── MASTER.md               # Design tokens
+```
+
+## Scripts
+
+- `npm run dev` - Start Vite dev server
+- `npm run server` - Start mock API server
+- `npm run dev:all` - Start both frontend and mock server
+- `npm run build` - Build for production
+
+## License
+
+MIT

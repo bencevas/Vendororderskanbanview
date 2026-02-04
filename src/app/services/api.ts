@@ -1,6 +1,8 @@
 import { Order } from '../components/order-card';
+import { supabase, isSupabaseConfigured } from './supabase';
+import type { Order as DbOrder, OrderItem as DbOrderItem } from '../types/database';
 
-// API Configuration
+// API Configuration - used as fallback when Supabase is not configured
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
 
 // Types
@@ -25,7 +27,50 @@ export interface OrderResponse {
   deliveryDate: string; // ISO date string from backend
 }
 
-// Helper function to handle API errors
+// Helper function to parse "YYYY-MM-DD" as local date, not UTC
+// This prevents timezone shifts (e.g., Feb 8 UTC becoming Feb 7 local)
+function parseLocalDate(dateStr: string): Date {
+  const [year, month, day] = dateStr.split('-').map(Number);
+  return new Date(year, month - 1, day);
+}
+
+// Helper function to format Date as "YYYY-MM-DD" in LOCAL time (not UTC!)
+// Using toISOString() would convert to UTC first, causing date shifts
+function formatLocalDate(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+// Helper function to convert DB order to frontend Order
+function dbOrderToOrder(dbOrder: DbOrder & { item_count?: number }): Order {
+  return {
+    id: dbOrder.id,
+    orderCode: dbOrder.order_code,
+    customerName: dbOrder.customer_name,
+    itemCount: dbOrder.item_count || 0,
+    totalAmount: Number(dbOrder.total_amount),
+    status: dbOrder.status,
+    deliveryDate: parseLocalDate(dbOrder.delivery_date),
+  };
+}
+
+// Helper function to convert DB order item to frontend OrderItem
+function dbOrderItemToOrderItem(dbItem: DbOrderItem): OrderItem {
+  return {
+    id: dbItem.id,
+    name: dbItem.product_name,
+    orderedQuantity: Number(dbItem.ordered_quantity),
+    actualQuantity: Number(dbItem.actual_quantity),
+    price: Number(dbItem.price),
+    unit: dbItem.unit,
+    confirmed: dbItem.confirmed,
+    image: dbItem.image_url || '',
+  };
+}
+
+// Helper function to handle REST API errors (fallback)
 async function handleResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {
     const error = await response.json().catch(() => ({ message: 'An error occurred' }));
@@ -34,16 +79,178 @@ async function handleResponse<T>(response: Response): Promise<T> {
   return response.json();
 }
 
-// API Functions
+// ============================================================================
+// SUPABASE API FUNCTIONS
+// ============================================================================
 
-/**
- * Fetch all orders, optionally filtered by date range
- * @param startDate - Start date for filtering orders
- * @param endDate - End date for filtering orders (optional)
- */
-export async function fetchOrders(startDate?: Date, endDate?: Date): Promise<Order[]> {
+async function fetchOrdersFromSupabase(startDate?: Date, endDate?: Date): Promise<Order[]> {
+  let query = supabase
+    .from('orders')
+    .select(`
+      *,
+      order_items(count)
+    `)
+    .order('delivery_date', { ascending: true })
+    .order('order_code', { ascending: true });
+
+  if (startDate) {
+    query = query.gte('delivery_date', formatLocalDate(startDate));
+  }
+  if (endDate) {
+    query = query.lte('delivery_date', formatLocalDate(endDate));
+  }
+
+  const { data, error } = await query;
+
+  if (error) {
+    console.error('❌ Supabase error:', error);
+    throw new Error(error.message);
+  }
+
+  return (data || []).map(order => ({
+    ...dbOrderToOrder(order),
+    itemCount: order.order_items?.[0]?.count || 0,
+  }));
+}
+
+async function fetchOrderByIdFromSupabase(orderId: string): Promise<Order> {
+  const { data, error } = await supabase
+    .from('orders')
+    .select(`
+      *,
+      order_items(count)
+    `)
+    .eq('id', orderId)
+    .single();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return {
+    ...dbOrderToOrder(data),
+    itemCount: data.order_items?.[0]?.count || 0,
+  };
+}
+
+async function fetchOrderItemsFromSupabase(orderId: string): Promise<OrderItem[]> {
+  const { data, error } = await supabase
+    .from('order_items')
+    .select('*')
+    .eq('order_id', orderId)
+    .order('created_at', { ascending: true });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return (data || []).map(dbOrderItemToOrderItem);
+}
+
+async function updateOrderStatusInSupabase(orderId: string, status: Order['status']): Promise<Order> {
+  const { data, error } = await supabase
+    .from('orders')
+    .update({ status })
+    .eq('id', orderId)
+    .select()
+    .single();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return dbOrderToOrder(data);
+}
+
+async function updateOrderItemQuantityInSupabase(
+  orderId: string,
+  itemId: string,
+  actualQuantity: number
+): Promise<OrderItem> {
+  const { data, error } = await supabase
+    .from('order_items')
+    .update({ actual_quantity: actualQuantity })
+    .eq('id', itemId)
+    .eq('order_id', orderId)
+    .select()
+    .single();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return dbOrderItemToOrderItem(data);
+}
+
+async function updateOrderItemConfirmationInSupabase(
+  orderId: string,
+  itemId: string,
+  confirmed: boolean | null
+): Promise<OrderItem> {
+  const { data, error } = await supabase
+    .from('order_items')
+    .update({ confirmed })
+    .eq('id', itemId)
+    .eq('order_id', orderId)
+    .select()
+    .single();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return dbOrderItemToOrderItem(data);
+}
+
+async function saveOrderChangesInSupabase(
+  orderId: string,
+  items: Partial<OrderItem>[],
+  status?: Order['status']
+): Promise<{ order: Order; items: OrderItem[] }> {
+  // Update order status if provided
+  if (status) {
+    const { error: statusError } = await supabase
+      .from('orders')
+      .update({ status })
+      .eq('id', orderId);
+
+    if (statusError) {
+      throw new Error(statusError.message);
+    }
+  }
+
+  // Update items
+  for (const item of items) {
+    if (item.id) {
+      const { error: itemError } = await supabase
+        .from('order_items')
+        .update({
+          actual_quantity: item.actualQuantity,
+          confirmed: item.confirmed,
+        })
+        .eq('id', item.id)
+        .eq('order_id', orderId);
+
+      if (itemError) {
+        throw new Error(itemError.message);
+      }
+    }
+  }
+
+  // Fetch updated order and items
+  const order = await fetchOrderByIdFromSupabase(orderId);
+  const updatedItems = await fetchOrderItemsFromSupabase(orderId);
+
+  return { order, items: updatedItems };
+}
+
+// ============================================================================
+// REST API FUNCTIONS (FALLBACK)
+// ============================================================================
+
+async function fetchOrdersFromRest(startDate?: Date, endDate?: Date): Promise<Order[]> {
   const url = new URL(`${API_BASE_URL}/orders`);
-  
+
   if (startDate) {
     url.searchParams.append('startDate', startDate.toISOString());
   }
@@ -51,179 +258,194 @@ export async function fetchOrders(startDate?: Date, endDate?: Date): Promise<Ord
     url.searchParams.append('endDate', endDate.toISOString());
   }
 
-  console.log('🔗 Fetching from URL:', url.toString());
+  console.log('🔗 Fetching from REST URL:', url.toString());
 
   const response = await fetch(url.toString(), {
     method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    headers: { 'Content-Type': 'application/json' },
   });
 
-  console.log('📡 Response status:', response.status, response.statusText);
-
   if (!response.ok) {
-    const errorText = await response.text();
-    console.error('❌ API Error Response:', errorText);
     throw new Error(`HTTP error! status: ${response.status}`);
   }
 
   const data: OrderResponse[] = await response.json();
-  console.log('📊 Received data:', data.length, 'orders');
-  
-  // Convert ISO date strings to Date objects
-  const orders = data.map(order => ({
+  return data.map(order => ({
     ...order,
     deliveryDate: new Date(order.deliveryDate),
   }));
-  
-  console.log('✅ Converted orders:', orders);
-  return orders;
 }
 
-/**
- * Fetch a single order by ID
- * @param orderId - The order ID
- */
-export async function fetchOrderById(orderId: string): Promise<Order> {
+async function fetchOrderByIdFromRest(orderId: string): Promise<Order> {
   const response = await fetch(`${API_BASE_URL}/orders/${orderId}`, {
     method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    headers: { 'Content-Type': 'application/json' },
   });
 
   const data: OrderResponse = await handleResponse<OrderResponse>(response);
-  
-  return {
-    ...data,
-    deliveryDate: new Date(data.deliveryDate),
-  };
+  return { ...data, deliveryDate: new Date(data.deliveryDate) };
 }
 
-/**
- * Fetch order items for a specific order
- * @param orderId - The order ID or order code
- */
-export async function fetchOrderItems(orderId: string): Promise<OrderItem[]> {
-  const url = `${API_BASE_URL}/orders/${orderId}/items`;
-  console.log('🔗 Fetching order items from:', url);
-  
-  const response = await fetch(url, {
+async function fetchOrderItemsFromRest(orderId: string): Promise<OrderItem[]> {
+  const response = await fetch(`${API_BASE_URL}/orders/${orderId}/items`, {
     method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    headers: { 'Content-Type': 'application/json' },
   });
 
-  console.log('📡 Order items response status:', response.status);
-
   if (!response.ok) {
-    const errorText = await response.text();
-    console.error('❌ Order items API Error:', errorText);
     throw new Error(`HTTP error! status: ${response.status}`);
   }
 
-  const data = await response.json();
-  console.log('📦 Received order items:', data.length);
-  return data;
+  return response.json();
 }
 
-/**
- * Update order status
- * @param orderId - The order ID
- * @param status - New status
- */
-export async function updateOrderStatus(
-  orderId: string,
-  status: Order['status']
-): Promise<Order> {
+async function updateOrderStatusFromRest(orderId: string, status: Order['status']): Promise<Order> {
   const response = await fetch(`${API_BASE_URL}/orders/${orderId}/status`, {
     method: 'PATCH',
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ status }),
   });
 
   const data: OrderResponse = await handleResponse<OrderResponse>(response);
-  
-  return {
-    ...data,
-    deliveryDate: new Date(data.deliveryDate),
-  };
+  return { ...data, deliveryDate: new Date(data.deliveryDate) };
 }
 
-/**
- * Update order item quantity
- * @param orderId - The order ID
- * @param itemId - The item ID
- * @param actualQuantity - New actual quantity
- */
-export async function updateOrderItemQuantity(
+async function updateOrderItemQuantityFromRest(
   orderId: string,
   itemId: string,
   actualQuantity: number
 ): Promise<OrderItem> {
   const response = await fetch(`${API_BASE_URL}/orders/${orderId}/items/${itemId}`, {
     method: 'PATCH',
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ actualQuantity }),
   });
 
   return handleResponse<OrderItem>(response);
 }
 
-/**
- * Confirm or deny an order item
- * @param orderId - The order ID
- * @param itemId - The item ID
- * @param confirmed - true to confirm, false to deny, null to revert
- */
-export async function updateOrderItemConfirmation(
+async function updateOrderItemConfirmationFromRest(
   orderId: string,
   itemId: string,
   confirmed: boolean | null
 ): Promise<OrderItem> {
   const response = await fetch(`${API_BASE_URL}/orders/${orderId}/items/${itemId}/confirm`, {
     method: 'PATCH',
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ confirmed }),
   });
 
   return handleResponse<OrderItem>(response);
 }
 
-/**
- * Save all changes for an order (bulk update)
- * @param orderId - The order ID
- * @param items - Array of updated items
- * @param status - Optional status update
- */
-export async function saveOrderChanges(
+async function saveOrderChangesFromRest(
   orderId: string,
   items: Partial<OrderItem>[],
   status?: Order['status']
 ): Promise<{ order: Order; items: OrderItem[] }> {
   const response = await fetch(`${API_BASE_URL}/orders/${orderId}`, {
     method: 'PATCH',
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ items, status }),
   });
 
   const data = await handleResponse<{ order: OrderResponse; items: OrderItem[] }>(response);
-  
   return {
-    order: {
-      ...data.order,
-      deliveryDate: new Date(data.order.deliveryDate),
-    },
+    order: { ...data.order, deliveryDate: new Date(data.order.deliveryDate) },
     items: data.items,
   };
+}
+
+// ============================================================================
+// EXPORTED API FUNCTIONS (Auto-switch between Supabase and REST)
+// ============================================================================
+
+const useSupabase = isSupabaseConfigured();
+
+if (useSupabase) {
+  console.log('🚀 Using Supabase backend');
+} else {
+  console.log('📡 Using REST API backend (mock server)');
+}
+
+/**
+ * Fetch all orders, optionally filtered by date range
+ */
+export async function fetchOrders(startDate?: Date, endDate?: Date): Promise<Order[]> {
+  if (useSupabase) {
+    return fetchOrdersFromSupabase(startDate, endDate);
+  }
+  return fetchOrdersFromRest(startDate, endDate);
+}
+
+/**
+ * Fetch a single order by ID
+ */
+export async function fetchOrderById(orderId: string): Promise<Order> {
+  if (useSupabase) {
+    return fetchOrderByIdFromSupabase(orderId);
+  }
+  return fetchOrderByIdFromRest(orderId);
+}
+
+/**
+ * Fetch order items for a specific order
+ */
+export async function fetchOrderItems(orderId: string): Promise<OrderItem[]> {
+  if (useSupabase) {
+    return fetchOrderItemsFromSupabase(orderId);
+  }
+  return fetchOrderItemsFromRest(orderId);
+}
+
+/**
+ * Update order status
+ */
+export async function updateOrderStatus(orderId: string, status: Order['status']): Promise<Order> {
+  if (useSupabase) {
+    return updateOrderStatusInSupabase(orderId, status);
+  }
+  return updateOrderStatusFromRest(orderId, status);
+}
+
+/**
+ * Update order item quantity
+ */
+export async function updateOrderItemQuantity(
+  orderId: string,
+  itemId: string,
+  actualQuantity: number
+): Promise<OrderItem> {
+  if (useSupabase) {
+    return updateOrderItemQuantityInSupabase(orderId, itemId, actualQuantity);
+  }
+  return updateOrderItemQuantityFromRest(orderId, itemId, actualQuantity);
+}
+
+/**
+ * Confirm or deny an order item
+ */
+export async function updateOrderItemConfirmation(
+  orderId: string,
+  itemId: string,
+  confirmed: boolean | null
+): Promise<OrderItem> {
+  if (useSupabase) {
+    return updateOrderItemConfirmationInSupabase(orderId, itemId, confirmed);
+  }
+  return updateOrderItemConfirmationFromRest(orderId, itemId, confirmed);
+}
+
+/**
+ * Save all changes for an order (bulk update)
+ */
+export async function saveOrderChanges(
+  orderId: string,
+  items: Partial<OrderItem>[],
+  status?: Order['status']
+): Promise<{ order: Order; items: OrderItem[] }> {
+  if (useSupabase) {
+    return saveOrderChangesInSupabase(orderId, items, status);
+  }
+  return saveOrderChangesFromRest(orderId, items, status);
 }

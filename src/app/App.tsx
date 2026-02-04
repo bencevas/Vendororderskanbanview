@@ -1,49 +1,69 @@
 import { useState, useEffect, useCallback } from 'react';
-import { ChevronLeft, ChevronRight, Calendar, LayoutGrid, List, User, Settings, LogOut, Bell, HelpCircle, ChevronDown, Loader2, AlertCircle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar, LayoutGrid, List, User, Settings, LogOut, Bell, HelpCircle, ChevronDown, Loader2, AlertCircle, LogIn, RefreshCw } from 'lucide-react';
 import { format, addDays, startOfDay, isSameDay } from 'date-fns';
 import { OrderCard, Order } from '@/app/components/order-card';
 import { OrderDetailsModal } from '@/app/components/order-details-modal';
 import { BatchView } from '@/app/components/batch-view';
 import { fetchOrders } from '@/app/services/api';
 import { generateMockOrders } from '@/app/mock-data';
+import { AuthProvider, useAuth } from '@/app/contexts/AuthContext';
+import { LoginForm } from '@/app/components/auth/LoginForm';
+import { useRealtimeOrders } from '@/app/hooks/useRealtimeOrders';
+import { TestPayloadGenerator } from '@/app/components/test-generator/TestPayloadGenerator';
 
-export default function App() {
+// Main content component that uses auth context
+function AppContent() {
+  const { user, isLoading: authLoading, isConfigured, signOut } = useAuth();
   const [startDate, setStartDate] = useState(startOfDay(new Date()));
-  // Start with empty array - will fetch from API
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [viewMode, setViewMode] = useState<'kanban' | 'batch'>('kanban');
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
-  const [refreshKey, setRefreshKey] = useState(0); // Force re-render key
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showTestGenerator, setShowTestGenerator] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
   
-  // Generate array of 5 consecutive days starting from startDate
   const days = Array.from({ length: 5 }, (_, i) => addDays(startDate, i));
   
-  // Fetch orders from API when startDate changes
+  // Track the loaded date range to avoid unnecessary fetches
+  const [loadedRange, setLoadedRange] = useState<{ start: Date; end: Date } | null>(null);
+  
   useEffect(() => {
     const loadOrders = async () => {
+      // Calculate the visible range
+      const visibleStart = startDate;
+      const visibleEnd = addDays(startDate, 4);
+      
+      // Check if we already have data for this range (with buffer)
+      if (loadedRange) {
+        const bufferStart = addDays(loadedRange.start, 2); // 2 day buffer
+        const bufferEnd = addDays(loadedRange.end, -2);
+        
+        if (visibleStart >= bufferStart && visibleEnd <= bufferEnd) {
+          // Data already loaded, no need to fetch
+          return;
+        }
+      }
+      
       setIsLoading(true);
       setError(null);
       
       try {
-        // Fetch from API server
-        const endDate = addDays(startDate, 4);
-        const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
-        console.log('🌐 Fetching orders from API:', `${apiUrl}/orders`);
-        console.log('📅 Date range:', { startDate: startDate.toISOString(), endDate: endDate.toISOString() });
-        
-        const fetchedOrders = await fetchOrders(startDate, endDate);
-        console.log('✅ Successfully fetched', fetchedOrders.length, 'orders from API');
-        console.log('📦 Orders:', fetchedOrders);
+        // Fetch a wider range (14 days before and after) to reduce API calls when navigating
+        const fetchStart = addDays(startDate, -7);
+        const fetchEnd = addDays(startDate, 14);
+        console.log('🌐 Fetching orders for range:', fetchStart.toDateString(), '-', fetchEnd.toDateString());
+        const fetchedOrders = await fetchOrders(fetchStart, fetchEnd);
+        console.log('✅ Successfully fetched', fetchedOrders.length, 'orders');
         setOrders(fetchedOrders);
+        setLoadedRange({ start: fetchStart, end: fetchEnd });
       } catch (err) {
         console.error('❌ API Error:', err);
-        const errorMessage = err instanceof Error ? err.message : 'Failed to load orders from API';
+        const errorMessage = err instanceof Error ? err.message : 'Failed to load orders';
         setError(errorMessage);
-        // Only use hardcoded data as last resort
-        console.warn('⚠️ Falling back to hardcoded data');
+        console.warn('⚠️ Falling back to mock data');
         const mockOrders = generateMockOrders();
         setOrders(mockOrders);
       } finally {
@@ -52,22 +72,14 @@ export default function App() {
     };
 
     loadOrders();
-  }, [startDate]);
+  }, [startDate, loadedRange]);
   
-  // Filter orders by date - this will automatically use the latest orders from state
   const getOrdersForDate = useCallback((date: Date) => {
-    const filtered = orders.filter(order => isSameDay(order.deliveryDate, date));
-    console.log('📅 getOrdersForDate:', { date: date.toISOString(), count: filtered.length, orders: filtered.map(o => ({ id: o.id, status: o.status })) });
-    return filtered;
+    return orders.filter(order => isSameDay(order.deliveryDate, date));
   }, [orders]);
   
-  const handlePrevious = () => {
-    setStartDate(prev => addDays(prev, -1));
-  };
-  
-  const handleNext = () => {
-    setStartDate(prev => addDays(prev, 1));
-  };
+  const handlePrevious = () => setStartDate(prev => addDays(prev, -1));
+  const handleNext = () => setStartDate(prev => addDays(prev, 1));
   
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newDate = new Date(e.target.value);
@@ -78,65 +90,80 @@ export default function App() {
   
   const isToday = (date: Date) => isSameDay(date, new Date());
   
-  // Update order in the orders array (for state management across screens)
   const updateOrderInState = useCallback((orderId: string, updates: Partial<Order>) => {
-    console.log('🔄 updateOrderInState called:', { orderId, updates });
+    setOrders(prevOrders => 
+      prevOrders.map(order => 
+        order.id === orderId ? { ...order, ...updates } : order
+      )
+    );
     
-    // Update the orders array - this will trigger re-render of all OrderCards
-    setOrders(prevOrders => {
-      const found = prevOrders.find(o => o.id === orderId);
-      console.log('📋 Current order in state:', found);
-      
-      const updated = prevOrders.map(order => {
-        if (order.id === orderId) {
-          const newOrder = { ...order, ...updates };
-          console.log('🔄 Updating order:', { old: order, new: newOrder });
-          return newOrder;
-        }
-        return order;
-      });
-      
-      const updatedOrder = updated.find(o => o.id === orderId);
-      console.log('✅ Updated orders state - new order:', updatedOrder);
-      console.log('📊 Total orders:', updated.length);
-      return updated;
-    });
+    setSelectedOrder(prev => 
+      prev?.id === orderId ? { ...prev, ...updates } : prev
+    );
     
-    // Also update selected order if it's the one being updated
-    // This ensures the modal shows the updated status immediately
-    setSelectedOrder(prev => {
-      if (prev?.id === orderId) {
-        const updated = { ...prev, ...updates };
-        console.log('✅ Updated selected order:', updated);
-        return updated;
-      }
-      return prev;
-    });
-    
-    // Force a re-render by updating the refresh key
     setRefreshKey(prev => prev + 1);
-    console.log('🔄 Refresh key updated to force re-render');
   }, []);
 
-  // Refresh orders from API
   const refreshOrders = async () => {
     try {
-      const endDate = addDays(startDate, 4);
-      const fetchedOrders = await fetchOrders(startDate, endDate);
+      // Use the same wide range as the initial load to avoid losing orders
+      const fetchStart = addDays(startDate, -7);
+      const fetchEnd = addDays(startDate, 14);
+      const fetchedOrders = await fetchOrders(fetchStart, fetchEnd);
       setOrders(fetchedOrders);
+      setLoadedRange({ start: fetchStart, end: fetchEnd });
     } catch (err) {
       console.error('Error refreshing orders:', err);
     }
   };
 
-  // Refresh orders after modal closes (in case changes were made)
+  // Real-time subscription for order updates
+  useRealtimeOrders({
+    onOrderInsert: (newOrder) => {
+      setOrders(prev => [...prev, newOrder]);
+      setRefreshKey(k => k + 1);
+    },
+    onOrderUpdate: (updatedOrder) => {
+      setOrders(prev =>
+        prev.map(order =>
+          order.id === updatedOrder.id ? { ...order, ...updatedOrder } : order
+        )
+      );
+      setSelectedOrder(prev =>
+        prev?.id === updatedOrder.id ? { ...prev, ...updatedOrder } : prev
+      );
+      setRefreshKey(k => k + 1);
+    },
+    onOrderDelete: (deletedId) => {
+      setOrders(prev => prev.filter(order => order.id !== deletedId));
+      if (selectedOrder?.id === deletedId) {
+        setSelectedOrder(null);
+      }
+      setRefreshKey(k => k + 1);
+    },
+    enabled: isConfigured,
+  });
+
   const handleOrderModalClose = async () => {
-    console.log('🚪 Modal closing, refreshing orders from server...');
     setSelectedOrder(null);
-    // Refresh to get latest data from server
     await refreshOrders();
-    console.log('✅ Orders refreshed after modal close');
   };
+
+  const handleSignOut = async () => {
+    await signOut();
+    setIsProfileDropdownOpen(false);
+  };
+
+  // Display name and role
+  const displayName = user?.name || 'Guest User';
+  const displayRole = user?.role 
+    ? user.role === 'super_admin' 
+      ? 'Super Admin' 
+      : user.role === 'owner' 
+        ? 'Store Owner' 
+        : 'Team Member'
+    : 'Not signed in';
+  const displayEmail = user?.email || '';
   
   return (
     <div className="min-h-screen bg-gray-50">
@@ -151,7 +178,7 @@ export default function App() {
             <div className="flex items-center bg-gray-100 rounded-lg p-1">
               <button
                 onClick={() => setViewMode('kanban')}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded text-sm font-medium transition-colors ${
+                className={`flex items-center gap-2 px-3 py-1.5 rounded text-sm font-medium transition-colors cursor-pointer ${
                   viewMode === 'kanban'
                     ? 'bg-white text-gray-900 shadow-sm'
                     : 'text-gray-600 hover:text-gray-900'
@@ -162,7 +189,7 @@ export default function App() {
               </button>
               <button
                 onClick={() => setViewMode('batch')}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded text-sm font-medium transition-colors ${
+                className={`flex items-center gap-2 px-3 py-1.5 rounded text-sm font-medium transition-colors cursor-pointer ${
                   viewMode === 'batch'
                     ? 'bg-white text-gray-900 shadow-sm'
                     : 'text-gray-600 hover:text-gray-900'
@@ -177,7 +204,7 @@ export default function App() {
             
             <button
               onClick={handlePrevious}
-              className="p-2 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 transition-colors"
+              className="p-2 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 transition-colors cursor-pointer"
               aria-label="Previous day"
             >
               <ChevronLeft className="w-5 h-5 text-gray-700" />
@@ -195,7 +222,7 @@ export default function App() {
             
             <button
               onClick={handleNext}
-              className="p-2 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 transition-colors"
+              className="p-2 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 transition-colors cursor-pointer"
               aria-label="Next day"
             >
               <ChevronRight className="w-5 h-5 text-gray-700" />
@@ -207,8 +234,26 @@ export default function App() {
             
             {/* User Profile Section */}
             <div className="flex items-center gap-3 ml-6">
+              {/* Test Generator Button */}
+              <button
+                onClick={() => setShowTestGenerator(true)}
+                className="px-3 py-1.5 text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors cursor-pointer"
+                title="Generate test orders"
+              >
+                + Test Order
+              </button>
+
+              {/* Refresh Button */}
+              <button
+                onClick={refreshOrders}
+                className="p-2 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
+                title="Refresh orders"
+              >
+                <RefreshCw className="w-5 h-5 text-gray-600" />
+              </button>
+
               {/* Notifications */}
-              <button className="relative p-2 rounded-lg hover:bg-gray-100 transition-colors">
+              <button className="relative p-2 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer">
                 <Bell className="w-5 h-5 text-gray-700" />
                 <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
               </button>
@@ -219,58 +264,93 @@ export default function App() {
               <div className="relative">
                 <button
                   onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
-                  className="flex items-center gap-3 hover:bg-gray-50 rounded-lg p-2 transition-colors"
+                  className="flex items-center gap-3 hover:bg-gray-50 rounded-lg p-2 transition-colors cursor-pointer"
                 >
                   <div className="text-right">
-                    <p className="text-sm font-medium text-gray-900">Sarah Mitchell</p>
-                    <p className="text-xs text-gray-600">Vendor Manager</p>
+                    <p className="text-sm font-medium text-gray-900">{displayName}</p>
+                    <p className="text-xs text-gray-600">{displayRole}</p>
                   </div>
-                  <img
-                    src="https://images.unsplash.com/photo-1655249481446-25d575f1c054?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxwcm9mZXNzaW9uYWwlMjBidXNpbmVzcyUyMHBlcnNvbiUyMHBvcnRyYWl0fGVufDF8fHx8MTc2OTkzNjAxMHww&ixlib=rb-4.1.0&q=80&w=1080"
-                    alt="Sarah Mitchell"
-                    className="w-10 h-10 rounded-full object-cover border-2 border-gray-200"
-                  />
+                  {user ? (
+                    <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-medium">
+                      {displayName.charAt(0).toUpperCase()}
+                    </div>
+                  ) : (
+                    <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
+                      <User className="w-5 h-5 text-gray-500" />
+                    </div>
+                  )}
                   <ChevronDown className={`w-4 h-4 text-gray-600 transition-transform ${isProfileDropdownOpen ? 'rotate-180' : ''}`} />
                 </button>
                 
                 {isProfileDropdownOpen && (
                   <>
-                    {/* Backdrop */}
                     <div 
                       className="fixed inset-0 z-10" 
                       onClick={() => setIsProfileDropdownOpen(false)}
                     />
                     
-                    {/* Dropdown Menu */}
                     <div className="absolute top-full right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-[220px] z-20">
-                      {/* Profile Header */}
-                      <div className="px-4 py-3 border-b border-gray-100">
-                        <p className="font-medium text-gray-900">Sarah Mitchell</p>
-                        <p className="text-sm text-gray-600">sarah@butchershop.com</p>
-                      </div>
-                      
-                      {/* Menu Items */}
-                      <div className="py-1">
-                        <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-3">
-                          <User className="w-4 h-4 text-gray-500" />
-                          <span>My Profile</span>
-                        </button>
-                        <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-3">
-                          <Settings className="w-4 h-4 text-gray-500" />
-                          <span>Settings</span>
-                        </button>
-                        <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-3">
-                          <HelpCircle className="w-4 h-4 text-gray-500" />
-                          <span>Help & Support</span>
-                        </button>
-                      </div>
-                      
-                      <div className="border-t border-gray-100 mt-1 pt-1">
-                        <button className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors flex items-center gap-3">
-                          <LogOut className="w-4 h-4" />
-                          <span>Log Out</span>
-                        </button>
-                      </div>
+                      {user ? (
+                        <>
+                          <div className="px-4 py-3 border-b border-gray-100">
+                            <p className="font-medium text-gray-900">{displayName}</p>
+                            <p className="text-sm text-gray-600">{displayEmail}</p>
+                            <p className="text-xs text-blue-600 mt-1">{displayRole}</p>
+                          </div>
+                          
+                          <div className="py-1">
+                            <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-3 cursor-pointer">
+                              <User className="w-4 h-4 text-gray-500" />
+                              <span>My Profile</span>
+                            </button>
+                            <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-3 cursor-pointer">
+                              <Settings className="w-4 h-4 text-gray-500" />
+                              <span>Settings</span>
+                            </button>
+                            <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-3 cursor-pointer">
+                              <HelpCircle className="w-4 h-4 text-gray-500" />
+                              <span>Help & Support</span>
+                            </button>
+                          </div>
+                          
+                          <div className="border-t border-gray-100 mt-1 pt-1">
+                            <button 
+                              onClick={handleSignOut}
+                              className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors flex items-center gap-3 cursor-pointer"
+                            >
+                              <LogOut className="w-4 h-4" />
+                              <span>Sign Out</span>
+                            </button>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div className="px-4 py-3 border-b border-gray-100">
+                            <p className="font-medium text-gray-900">Welcome</p>
+                            <p className="text-sm text-gray-600">Sign in to manage orders</p>
+                          </div>
+                          
+                          {isConfigured ? (
+                            <div className="py-1">
+                              <button 
+                                onClick={() => {
+                                  setShowLoginModal(true);
+                                  setIsProfileDropdownOpen(false);
+                                }}
+                                className="w-full text-left px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 transition-colors flex items-center gap-3 cursor-pointer"
+                              >
+                                <LogIn className="w-4 h-4" />
+                                <span>Sign In</span>
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="px-4 py-3 text-sm text-gray-500">
+                              <p>Authentication not configured.</p>
+                              <p className="text-xs mt-1">Set up Supabase to enable login.</p>
+                            </div>
+                          )}
+                        </>
+                      )}
                     </div>
                   </>
                 )}
@@ -281,7 +361,7 @@ export default function App() {
       </div>
       
       {/* Main Content Area */}
-      {isLoading ? (
+      {isLoading || authLoading ? (
         <div className="max-w-[1600px] mx-auto px-6 py-12 flex items-center justify-center">
           <div className="flex flex-col items-center gap-4">
             <Loader2 className="w-8 h-8 text-gray-400 animate-spin" />
@@ -302,7 +382,7 @@ export default function App() {
                     .then(setOrders)
                     .catch(err => setError(err instanceof Error ? err.message : 'Failed to load orders'));
                 }}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors cursor-pointer"
               >
                 Retry
               </button>
@@ -320,7 +400,6 @@ export default function App() {
                   key={`${day.toISOString()}-${refreshKey}`}
                   className="flex-shrink-0 w-80 bg-gray-100 rounded-lg p-4"
                 >
-                  {/* Column Header */}
                   <div className="mb-4">
                     <div className="flex items-center justify-between">
                       <div>
@@ -335,24 +414,18 @@ export default function App() {
                     </div>
                   </div>
                   
-                  {/* Orders */}
                   <div className="space-y-3">
                     {dayOrders.length > 0 ? (
-                      dayOrders.map(order => {
-                        // dayOrders comes from getOrdersForDate which uses latest orders state
-                        // Include status in key to force re-render when status changes
-                        return (
-                          <OrderCard 
-                            key={`${order.id}-${order.status}`}
-                            order={order}
-                            onClick={() => {
-                              // Get the latest order from state
-                              const latestOrder = orders.find(o => o.id === order.id) || order;
-                              setSelectedOrder(latestOrder);
-                            }}
-                          />
-                        );
-                      })
+                      dayOrders.map(order => (
+                        <OrderCard 
+                          key={`${order.id}-${order.status}`}
+                          order={order}
+                          onClick={() => {
+                            const latestOrder = orders.find(o => o.id === order.id) || order;
+                            setSelectedOrder(latestOrder);
+                          }}
+                        />
+                      ))
                     ) : (
                       <div className="text-center py-8 text-gray-500 text-sm">
                         No orders scheduled
@@ -381,11 +454,48 @@ export default function App() {
           order={selectedOrder}
           onClose={handleOrderModalClose}
           onOrderUpdate={(orderId, updates) => {
-            console.log('🎯 onOrderUpdate received in App:', { orderId, updates });
             updateOrderInState(orderId, updates);
           }}
         />
       )}
+
+      {/* Login Modal */}
+      {showLoginModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="relative">
+            <button
+              onClick={() => setShowLoginModal(false)}
+              className="absolute -top-2 -right-2 w-8 h-8 bg-white rounded-full shadow-lg flex items-center justify-center hover:bg-gray-100 cursor-pointer z-10"
+            >
+              <span className="text-gray-500 text-xl leading-none">&times;</span>
+            </button>
+            <LoginForm onSuccess={() => setShowLoginModal(false)} />
+          </div>
+        </div>
+      )}
+
+      {/* Test Generator Modal */}
+      {showTestGenerator && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <TestPayloadGenerator 
+            onClose={() => setShowTestGenerator(false)} 
+            onOrderCreated={() => {
+              // Refresh orders after a new test order is created
+              refreshOrders();
+              setShowTestGenerator(false);
+            }}
+          />
+        </div>
+      )}
     </div>
+  );
+}
+
+// Main App component with AuthProvider wrapper
+export default function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 }
