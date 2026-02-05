@@ -82,9 +82,9 @@ VITE_SUPABASE_ANON_KEY=your-anon-key`}
 
         {/* Error Message */}
         {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-3">
-            <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
-            <p className="text-sm text-red-700">{error}</p>
+          <div className="mb-6 p-4 bg-[#EA776C]/10 border border-[#EA776C]/30 rounded-lg flex items-center gap-3">
+            <AlertCircle className="w-5 h-5 text-[#EA776C] flex-shrink-0" />
+            <p className="text-sm text-[#EA776C]">{error}</p>
           </div>
         )}
 
@@ -105,7 +105,7 @@ VITE_SUPABASE_ANON_KEY=your-anon-key`}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="John Doe"
                   required={isSignUp}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#476a30] focus:border-[#476a30] transition-colors"
                 />
               </div>
             </div>
@@ -145,7 +145,7 @@ VITE_SUPABASE_ANON_KEY=your-anon-key`}
                 placeholder="••••••••"
                 required
                 minLength={6}
-                className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#476a30] focus:border-[#476a30] transition-colors"
               />
               <button
                 type="button"
@@ -165,7 +165,7 @@ VITE_SUPABASE_ANON_KEY=your-anon-key`}
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            className="w-full py-3 px-4 bg-[#476a30] hover:bg-[#3d5a28] text-white font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {isLoading ? (
               <>
@@ -188,7 +188,7 @@ VITE_SUPABASE_ANON_KEY=your-anon-key`}
                 setIsSignUp(!isSignUp);
                 setError(null);
               }}
-              className="text-blue-600 hover:text-blue-700 font-medium"
+              className="text-[#476a30] hover:text-[#3d5a28] font-medium"
             >
               {isSignUp ? 'Sign In' : 'Sign Up'}
             </button>

@@ -279,12 +279,12 @@ export function TestPayloadGenerator({ onClose, onOrderCreated }: Props) {
   return (
     <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
       {/* Header */}
-      <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between bg-gradient-to-r from-blue-600 to-indigo-600">
+      <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between bg-[#476a30]">
         <div className="flex items-center gap-3 text-white">
           <Package className="w-6 h-6" />
           <div>
             <h2 className="text-lg font-semibold">Test Payload Generator</h2>
-            <p className="text-sm text-blue-100">Create Shopify-style test orders</p>
+            <p className="text-sm text-white/80">Create Shopify-style test orders</p>
           </div>
         </div>
         {onClose && (
@@ -320,7 +320,7 @@ export function TestPayloadGenerator({ onClose, onOrderCreated }: Props) {
                 <select
                   value={selectedStoreId || ''}
                   onChange={(e) => setSelectedStoreId(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#476a30] focus:border-[#476a30]"
                 >
                   {stores.map((store) => (
                     <option key={store.id} value={store.id}>
@@ -380,7 +380,7 @@ export function TestPayloadGenerator({ onClose, onOrderCreated }: Props) {
                 <button
                   onClick={addLineItem}
                   disabled={lineItems.length >= SAMPLE_PRODUCTS.length}
-                  className="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                  className="flex items-center gap-1 text-sm text-[#476a30] hover:text-[#3d5a28] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                 >
                   <Plus className="w-4 h-4" />
                   Add Item
@@ -393,7 +393,7 @@ export function TestPayloadGenerator({ onClose, onOrderCreated }: Props) {
                     <select
                       value={item.product.sku}
                       onChange={(e) => updateLineItemProduct(index, e.target.value)}
-                      className="flex-1 px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                      className="flex-1 px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-[#476a30]"
                     >
                       {SAMPLE_PRODUCTS.map((p) => (
                         <option key={p.sku} value={p.sku}>
@@ -406,7 +406,7 @@ export function TestPayloadGenerator({ onClose, onOrderCreated }: Props) {
                       value={item.quantity}
                       onChange={(e) => updateLineItemQuantity(index, parseInt(e.target.value) || 1)}
                       min="1"
-                      className="w-20 px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                      className="w-20 px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-[#476a30]"
                     />
                     <span className="text-sm text-gray-600 w-16 text-right">
                       ${(parseFloat(item.product.price) * item.quantity).toFixed(2)}
@@ -414,7 +414,7 @@ export function TestPayloadGenerator({ onClose, onOrderCreated }: Props) {
                     {lineItems.length > 1 && (
                       <button
                         onClick={() => removeLineItem(index)}
-                        className="p-1 text-red-500 hover:text-red-700 cursor-pointer"
+                        className="p-1 text-[#EA776C] hover:text-[#d4665c] cursor-pointer"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -442,7 +442,7 @@ export function TestPayloadGenerator({ onClose, onOrderCreated }: Props) {
               >
                 {copied ? (
                   <>
-                    <Check className="w-4 h-4 text-green-500" />
+                    <Check className="w-4 h-4 text-[#476a30]" />
                     Copied!
                   </>
                 ) : (
@@ -464,14 +464,14 @@ export function TestPayloadGenerator({ onClose, onOrderCreated }: Props) {
           <div
             className={`mt-6 p-4 rounded-lg flex items-center gap-3 ${
               result.success
-                ? 'bg-green-50 text-green-800 border border-green-200'
-                : 'bg-red-50 text-red-800 border border-red-200'
+                ? 'bg-[#476a30]/10 text-[#476a30] border border-[#476a30]/30'
+                : 'bg-[#EA776C]/10 text-[#EA776C] border border-[#EA776C]/30'
             }`}
           >
             {result.success ? (
-              <Check className="w-5 h-5 text-green-500" />
+              <Check className="w-5 h-5 text-[#476a30]" />
             ) : (
-              <AlertCircle className="w-5 h-5 text-red-500" />
+              <AlertCircle className="w-5 h-5 text-[#EA776C]" />
             )}
             <p>{result.message}</p>
             {result.success && (
@@ -494,7 +494,7 @@ export function TestPayloadGenerator({ onClose, onOrderCreated }: Props) {
         <button
           onClick={submitOrder}
           disabled={isSubmitting || lineItems.length === 0 || !selectedStoreId}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+          className="flex items-center gap-2 px-4 py-2 bg-[#476a30] text-white rounded-lg hover:bg-[#3d5a28] transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
         >
           {isSubmitting ? (
             <>

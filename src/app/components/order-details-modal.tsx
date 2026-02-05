@@ -169,21 +169,21 @@ export function OrderDetailsModal({ order, onClose, onOrderUpdate }: OrderDetail
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end min-[481px]:items-center justify-center z-50 min-[481px]:p-4">
+      <div className="bg-white rounded-t-xl min-[481px]:rounded-lg shadow-xl w-full min-[481px]:max-w-3xl h-[95vh] min-[481px]:h-auto min-[481px]:max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="bg-gray-50 border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <h2 className="text-xl font-semibold text-gray-900">{order.orderCode}</h2>
+        <div className="bg-gray-50 border-b border-gray-200 px-4 min-[481px]:px-6 py-3 min-[481px]:py-4 flex items-center justify-between">
+          <div className="flex items-center gap-2 min-[481px]:gap-4 flex-wrap">
+            <h2 className="text-base min-[481px]:text-xl font-semibold text-gray-900">{order.orderCode}</h2>
             
             {/* Status Dropdown */}
             <div className="relative">
               <button
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium border ${statusColors[currentStatus]} hover:opacity-80 transition-opacity`}
+                className={`flex items-center gap-1 min-[481px]:gap-2 px-2 min-[481px]:px-3 py-1 min-[481px]:py-1.5 rounded-full text-xs min-[481px]:text-sm font-medium border ${statusColors[currentStatus]} hover:opacity-80 transition-opacity`}
               >
                 <span>{currentStatus}</span>
-                <ChevronDown className="w-4 h-4" />
+                <ChevronDown className="w-3 h-3 min-[481px]:w-4 min-[481px]:h-4" />
               </button>
               
               {isDropdownOpen && (
@@ -217,7 +217,7 @@ export function OrderDetailsModal({ order, onClose, onOrderUpdate }: OrderDetail
           
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-200 rounded-lg transition-colors"
+            className="p-1.5 min-[481px]:p-2 hover:bg-gray-200 rounded-lg transition-colors"
             aria-label="Close"
           >
             <X className="w-5 h-5 text-gray-600" />
@@ -225,15 +225,15 @@ export function OrderDetailsModal({ order, onClose, onOrderUpdate }: OrderDetail
         </div>
 
         {/* Customer Info */}
-        <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
+        <div className="px-4 min-[481px]:px-6 py-3 min-[481px]:py-4 bg-gray-50 border-b border-gray-200">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Customer</p>
-              <p className="font-medium text-gray-900">{order.customerName}</p>
+              <p className="text-xs min-[481px]:text-sm text-gray-600">Customer</p>
+              <p className="font-medium text-gray-900 text-sm min-[481px]:text-base">{order.customerName}</p>
             </div>
             <div className="text-right">
-              <p className="text-sm text-gray-600">Delivery Date</p>
-              <p className="font-medium text-gray-900">
+              <p className="text-xs min-[481px]:text-sm text-gray-600">Delivery Date</p>
+              <p className="font-medium text-gray-900 text-sm min-[481px]:text-base">
                 {order.deliveryDate.toLocaleDateString('en-US', { 
                   month: 'short', 
                   day: 'numeric', 
@@ -245,7 +245,7 @@ export function OrderDetailsModal({ order, onClose, onOrderUpdate }: OrderDetail
         </div>
 
         {/* Items List */}
-        <div className="flex-1 overflow-y-auto px-6 py-4">
+        <div className="flex-1 overflow-y-auto px-3 min-[481px]:px-6 py-3 min-[481px]:py-4">
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
               <div className="flex flex-col items-center gap-4">
@@ -256,7 +256,7 @@ export function OrderDetailsModal({ order, onClose, onOrderUpdate }: OrderDetail
           ) : error ? (
             <div className="flex items-center justify-center py-12">
               <div className="flex flex-col items-center gap-4 max-w-md text-center">
-                <AlertCircle className="w-12 h-12 text-red-500" />
+                <AlertCircle className="w-12 h-12 text-[#EA776C]" />
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">Error Loading Items</h3>
                   <p className="text-gray-600">{error}</p>
@@ -269,13 +269,116 @@ export function OrderDetailsModal({ order, onClose, onOrderUpdate }: OrderDetail
               {items.map((item) => (
               <div
                 key={item.id}
-                className={`bg-white border rounded-lg p-4 transition-all ${
-                  item.confirmed === false ? 'opacity-60 border-red-300 bg-red-50' : 
-                  item.confirmed === true ? 'border-green-300 bg-green-50' : 
+                className={`bg-white border rounded-lg p-3 min-[481px]:p-4 transition-all ${
+                  item.confirmed === false ? 'opacity-60 border-[#EA776C]/30 bg-[#EA776C]/10' : 
+                  item.confirmed === true ? 'border-[#476a30]/30 bg-[#476a30]/10' : 
                   'border-gray-200 hover:border-gray-300'
                 }`}
               >
-                <div className="flex gap-4">
+                {/* Mobile Layout */}
+                <div className="min-[481px]:hidden">
+                  {/* Row 1: Image + Name + Price */}
+                  <div className="flex gap-3 mb-3">
+                    <img
+                      src={item.image}
+                      alt={item.name}
+                      className="w-14 h-14 object-cover rounded-lg bg-gray-100 flex-shrink-0"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-medium text-gray-900 text-sm truncate">{item.name}</h3>
+                      <p className="text-xs text-gray-500 mt-0.5">@${item.price.toFixed(2)} / {item.unit}</p>
+                      <p className="text-sm font-semibold text-gray-900 mt-1">${(item.actualQuantity * item.price).toFixed(2)}</p>
+                    </div>
+                  </div>
+                  
+                  {/* Row 2: Quantity Adjuster + Action Buttons in one line */}
+                  <div className="flex items-center gap-2">
+                    {/* Quantity Adjuster */}
+                    <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden flex-shrink-0">
+                      <button
+                        onClick={() => decrementQuantity(item.id)}
+                        disabled={item.confirmed !== null}
+                        className={`px-2 py-2 bg-gray-100 hover:bg-gray-200 border-r transition-colors ${
+                          item.confirmed !== null ? 'opacity-50 cursor-not-allowed' : ''
+                        }`}
+                      >
+                        <Minus className="w-4 h-4 text-gray-700" />
+                      </button>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={item.actualQuantity}
+                        onChange={(e) => handleQuantityChange(item.id, e.target.value)}
+                        disabled={item.confirmed !== null}
+                        className={`w-14 px-1 py-2 text-center text-sm font-medium border-0 focus:outline-none ${
+                          item.confirmed !== null 
+                            ? 'bg-gray-100 cursor-not-allowed text-gray-600' 
+                            : 'bg-white'
+                        } ${hasQuantityDifference(item) ? 'bg-[#EA776C]/10' : ''}`}
+                      />
+                      <button
+                        onClick={() => incrementQuantity(item.id)}
+                        disabled={item.confirmed !== null}
+                        className={`px-2 py-2 bg-gray-100 hover:bg-gray-200 border-l transition-colors ${
+                          item.confirmed !== null ? 'opacity-50 cursor-not-allowed' : ''
+                        }`}
+                      >
+                        <Plus className="w-4 h-4 text-gray-700" />
+                      </button>
+                    </div>
+                    
+                    {/* Unit + difference */}
+                    <div className="flex flex-col text-xs text-gray-600 min-w-0">
+                      <span>{item.unit}</span>
+                      {hasQuantityDifference(item) && (
+                        <span className="text-[#EA776C]">(was {item.orderedQuantity})</span>
+                      )}
+                    </div>
+                    
+                    {/* Action Buttons */}
+                    <div className="flex gap-1.5 ml-auto flex-shrink-0">
+                      {item.confirmed === null ? (
+                        <>
+                          <button
+                            onClick={() => handleConfirm(item.id)}
+                            className="w-9 h-9 flex items-center justify-center bg-[#476a30] hover:bg-[#3d5a28] text-white rounded-lg transition-colors"
+                            title="Confirm"
+                          >
+                            <Check className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDeny(item.id)}
+                            className="w-9 h-9 flex items-center justify-center bg-[#EA776C] hover:bg-[#d4665c] text-white rounded-lg transition-colors"
+                            title="Deny"
+                          >
+                            <XIcon className="w-4 h-4" />
+                          </button>
+                        </>
+                      ) : item.confirmed ? (
+                        <button
+                          onClick={() => handleRevertConfirmation(item.id)}
+                          className="h-9 px-3 flex items-center justify-center gap-1 text-[#476a30] bg-[#476a30]/10 hover:bg-[#476a30]/20 rounded-lg text-xs font-medium transition-colors cursor-pointer"
+                          title="Click to revert"
+                        >
+                          <Check className="w-3 h-3" />
+                          <span>OK</span>
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => handleRevertConfirmation(item.id)}
+                          className="h-9 px-3 flex items-center justify-center gap-1 text-[#EA776C] bg-[#EA776C]/10 hover:bg-[#EA776C]/20 rounded-lg text-xs font-medium transition-colors cursor-pointer"
+                          title="Click to revert"
+                        >
+                          <XIcon className="w-3 h-3" />
+                          <span>No</span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Desktop Layout */}
+                <div className="hidden min-[481px]:flex gap-4">
                   {/* Product Image */}
                   <div className="flex-shrink-0">
                     <img
@@ -314,7 +417,7 @@ export function OrderDetailsModal({ order, onClose, onOrderUpdate }: OrderDetail
                                   item.confirmed !== null 
                                     ? 'bg-gray-100 cursor-not-allowed text-gray-600' 
                                     : 'bg-white focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20'
-                                } ${hasQuantityDifference(item) ? 'bg-orange-50' : ''}`}
+                                } ${hasQuantityDifference(item) ? 'bg-[#EA776C]/10' : ''}`}
                               />
                               <button
                                 onClick={() => incrementQuantity(item.id)}
@@ -328,7 +431,7 @@ export function OrderDetailsModal({ order, onClose, onOrderUpdate }: OrderDetail
                             </div>
                             <span className="text-gray-600">{item.unit}</span>
                             {hasQuantityDifference(item) && (
-                              <span className="text-xs text-orange-600">
+                              <span className="text-xs text-[#EA776C]">
                                 (was {item.orderedQuantity})
                               </span>
                             )}
@@ -352,14 +455,14 @@ export function OrderDetailsModal({ order, onClose, onOrderUpdate }: OrderDetail
                           <>
                             <button
                               onClick={() => handleConfirm(item.id)}
-                              className="w-10 h-10 flex items-center justify-center bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors shadow-sm"
+                              className="w-10 h-10 flex items-center justify-center bg-[#476a30] hover:bg-[#3d5a28] text-white rounded-lg transition-colors shadow-sm"
                               title="Confirm availability"
                             >
                               <Check className="w-5 h-5" />
                             </button>
                             <button
                               onClick={() => handleDeny(item.id)}
-                              className="w-10 h-10 flex items-center justify-center bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors shadow-sm"
+                              className="w-10 h-10 flex items-center justify-center bg-[#EA776C] hover:bg-[#d4665c] text-white rounded-lg transition-colors shadow-sm"
                               title="Deny availability"
                             >
                               <XIcon className="w-5 h-5" />
@@ -368,7 +471,7 @@ export function OrderDetailsModal({ order, onClose, onOrderUpdate }: OrderDetail
                         ) : item.confirmed ? (
                           <button
                             onClick={() => handleRevertConfirmation(item.id)}
-                            className="flex items-center gap-2 text-green-700 bg-green-100 hover:bg-green-200 px-3 py-2 rounded-lg transition-colors cursor-pointer"
+                            className="flex items-center gap-2 text-[#476a30] bg-[#476a30]/10 hover:bg-[#476a30]/20 px-3 py-2 rounded-lg transition-colors cursor-pointer"
                             title="Click to revert confirmation"
                           >
                             <Check className="w-4 h-4" />
@@ -377,7 +480,7 @@ export function OrderDetailsModal({ order, onClose, onOrderUpdate }: OrderDetail
                         ) : (
                           <button
                             onClick={() => handleRevertConfirmation(item.id)}
-                            className="flex items-center gap-2 text-red-700 bg-red-100 hover:bg-red-200 px-3 py-2 rounded-lg transition-colors cursor-pointer"
+                            className="flex items-center gap-2 text-[#EA776C] bg-[#EA776C]/10 hover:bg-[#EA776C]/20 px-3 py-2 rounded-lg transition-colors cursor-pointer"
                             title="Click to revert denial"
                           >
                             <XIcon className="w-4 h-4" />
@@ -392,82 +495,83 @@ export function OrderDetailsModal({ order, onClose, onOrderUpdate }: OrderDetail
             ))}
             </div>
           )}
-
-          {/* Total Section */}
-          <div className="mt-6 pt-4 border-t-2 border-gray-300">
-            <div className="flex justify-between items-center">
-              <div>
-                <p className="text-sm text-gray-600">
-                  {items.filter(i => i.confirmed === true).length} of {items.length} items confirmed
-                </p>
-                {items.some(i => i.confirmed === false) && (
-                  <p className="text-sm text-red-600 mt-1">
-                    {items.filter(i => i.confirmed === false).length} item(s) denied
-                  </p>
-                )}
-              </div>
-              <div className="text-right">
-                <p className="text-sm text-gray-600">Order Total</p>
-                <p className="text-2xl font-semibold text-gray-900">
-                  ${calculateTotal().toFixed(2)}
-                </p>
-              </div>
-            </div>
-          </div>
         </div>
 
-        {/* Footer */}
-        <div className="bg-gray-50 border-t border-gray-200 px-6 py-4 flex justify-end gap-3">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-          >
-            Close
-          </button>
-          <button
-            onClick={async () => {
-              setIsSaving(true);
-              try {
-                console.log('💾 Save Changes clicked:', { orderId: order.id, status: currentStatus, itemsCount: items.length });
-                
-                // First, save the status to the server if it changed
-                if (currentStatus !== order.status) {
-                  console.log('📤 Saving status change:', { from: order.status, to: currentStatus });
-                  await updateOrderStatus(order.id, currentStatus);
+        {/* Footer with Total and Buttons - always at bottom */}
+        <div className="bg-gray-50 border-t border-gray-200 px-4 min-[481px]:px-6 py-3 min-[481px]:py-4">
+          {/* Total Section */}
+          <div className="flex justify-between items-center mb-3 min-[481px]:mb-4 pb-3 min-[481px]:pb-4 border-b border-gray-200">
+            <div>
+              <p className="text-xs min-[481px]:text-sm text-gray-600">
+                {items.filter(i => i.confirmed === true).length} of {items.length} items confirmed
+              </p>
+              {items.some(i => i.confirmed === false) && (
+                <p className="text-xs min-[481px]:text-sm text-[#EA776C] mt-0.5">
+                  {items.filter(i => i.confirmed === false).length} item(s) denied
+                </p>
+              )}
+            </div>
+            <div className="text-right">
+              <p className="text-xs min-[481px]:text-sm text-gray-600">Order Total</p>
+              <p className="text-xl min-[481px]:text-2xl font-semibold text-gray-900">
+                ${calculateTotal().toFixed(2)}
+              </p>
+            </div>
+          </div>
+          
+          {/* Action Buttons */}
+          <div className="flex gap-2 min-[481px]:gap-3 flex-1 min-[481px]:flex-none min-[481px]:justify-end">
+            <button
+              onClick={onClose}
+              className="flex-1 min-[481px]:flex-none px-4 py-2.5 min-[481px]:py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm min-[481px]:text-base"
+            >
+              Close
+            </button>
+            <button
+              onClick={async () => {
+                setIsSaving(true);
+                try {
+                  console.log('💾 Save Changes clicked:', { orderId: order.id, status: currentStatus, itemsCount: items.length });
+                  
+                  // First, save the status to the server if it changed
+                  if (currentStatus !== order.status) {
+                    console.log('📤 Saving status change:', { from: order.status, to: currentStatus });
+                    await updateOrderStatus(order.id, currentStatus);
+                  }
+                  
+                  // Then save all order changes (items and status)
+                  console.log('💾 Saving order changes...');
+                  await saveOrderChanges(order.id, items, currentStatus);
+                  console.log('✅ All changes saved to server');
+                  
+                  // Update parent state - this will update the main board
+                  if (onOrderUpdate) {
+                    console.log('🔄 Updating parent state with new status:', currentStatus);
+                    onOrderUpdate(order.id, { status: currentStatus });
+                  } else {
+                    console.warn('⚠️ onOrderUpdate not provided!');
+                  }
+                  
+                  // Small delay to ensure state update propagates, then close modal
+                  // The parent's handleOrderModalClose will refresh orders from server
+                  setTimeout(() => {
+                    console.log('🚪 Closing modal - parent will refresh');
+                    onClose();
+                  }, 100);
+                } catch (err) {
+                  console.error('❌ Error saving changes:', err);
+                  alert('Failed to save changes. Please try again.');
+                } finally {
+                  setIsSaving(false);
                 }
-                
-                // Then save all order changes (items and status)
-                console.log('💾 Saving order changes...');
-                await saveOrderChanges(order.id, items, currentStatus);
-                console.log('✅ All changes saved to server');
-                
-                // Update parent state - this will update the main board
-                if (onOrderUpdate) {
-                  console.log('🔄 Updating parent state with new status:', currentStatus);
-                  onOrderUpdate(order.id, { status: currentStatus });
-                } else {
-                  console.warn('⚠️ onOrderUpdate not provided!');
-                }
-                
-                // Small delay to ensure state update propagates, then close modal
-                // The parent's handleOrderModalClose will refresh orders from server
-                setTimeout(() => {
-                  console.log('🚪 Closing modal - parent will refresh');
-                  onClose();
-                }, 100);
-              } catch (err) {
-                console.error('❌ Error saving changes:', err);
-                alert('Failed to save changes. Please try again.');
-              } finally {
-                setIsSaving(false);
-              }
-            }}
-            disabled={isSaving || isLoading}
-            className="px-4 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-          >
-            {isSaving && <Loader2 className="w-4 h-4 animate-spin" />}
-            Save Changes
-          </button>
+              }}
+              disabled={isSaving || isLoading}
+              className="flex-1 min-[481px]:flex-none px-4 py-2.5 min-[481px]:py-2 text-white bg-[#476a30] rounded-lg hover:bg-[#3d5a28] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm min-[481px]:text-base"
+            >
+              {isSaving && <Loader2 className="w-4 h-4 animate-spin" />}
+              Save Changes
+            </button>
+          </div>
         </div>
       </div>
     </div>

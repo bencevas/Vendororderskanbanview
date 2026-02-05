@@ -26,14 +26,14 @@ export function OrderCard({ order, onClick }: OrderCardProps) {
   return (
     <div 
       onClick={onClick}
-      className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition-shadow cursor-pointer"
+      className="bg-white rounded-lg border border-gray-200 p-3 min-[481px]:p-4 hover:shadow-md transition-shadow cursor-pointer"
     >
-      <div className="flex items-start justify-between mb-3">
-        <div className="flex-1">
-          <h3 className="font-semibold text-gray-900">{order.orderCode}</h3>
-          <p className="text-sm text-gray-600 mt-1">{order.customerName}</p>
+      <div className="flex items-start justify-between mb-2 min-[481px]:mb-3 gap-2">
+        <div className="flex-1 min-w-0">
+          <h3 className="font-semibold text-gray-900 text-sm min-[481px]:text-base truncate">{order.orderCode}</h3>
+          <p className="text-xs min-[481px]:text-sm text-gray-600 mt-0.5 min-[481px]:mt-1 truncate">{order.customerName}</p>
         </div>
-        <span className={`px-2 py-1 rounded-full text-xs font-medium border ${statusColors[order.status]}`}>
+        <span className={`px-2 py-1 rounded-full text-xs font-medium border whitespace-nowrap ${statusColors[order.status]}`}>
           {order.status}
         </span>
       </div>
