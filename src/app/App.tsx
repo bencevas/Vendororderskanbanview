@@ -38,6 +38,12 @@ function AppContent() {
   
   useEffect(() => {
     const loadOrders = async () => {
+      // Don't load if user is not logged in or still loading auth
+      if (!user || authLoading) {
+        setIsLoading(false);
+        return;
+      }
+      
       // Calculate the visible range
       const visibleStart = startDate;
       const visibleEnd = addDays(startDate, 4);
@@ -78,7 +84,14 @@ function AppContent() {
     };
 
     loadOrders();
-  }, [startDate, loadedRange]);
+  }, [startDate, loadedRange, user, authLoading]);
+  
+  // Reset loaded range when user logs in to force a fresh fetch
+  useEffect(() => {
+    if (user && !authLoading) {
+      setLoadedRange(null);
+    }
+  }, [user?.id]); // Only trigger when user ID changes (login/logout)
   
   const getOrdersForDate = useCallback((date: Date) => {
     return orders.filter(order => isSameDay(order.deliveryDate, date));
