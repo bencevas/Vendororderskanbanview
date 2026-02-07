@@ -3,6 +3,7 @@ import { format, addDays } from 'date-fns';
 import { supabase, isSupabaseConfigured } from '../../services/supabase';
 import { Send, Plus, Trash2, Copy, Check, AlertCircle, Loader2, Package, Store, RefreshCw } from 'lucide-react';
 import type { Store as StoreType } from '../../types/database';
+import { useLocale } from '../../contexts/LocaleContext';
 
 // Shopify Order Types (simplified)
 interface ShopifyLineItem {
@@ -60,6 +61,7 @@ interface Props {
 }
 
 export function TestPayloadGenerator({ onClose, onOrderCreated }: Props) {
+  const { t } = useLocale();
   const [customer, setCustomer] = useState(SAMPLE_CUSTOMERS[0]);
   const [deliveryDate, setDeliveryDate] = useState(format(addDays(new Date(), 0), 'yyyy-MM-dd')); // Default to today
   const [lineItems, setLineItems] = useState<Array<{ product: typeof SAMPLE_PRODUCTS[0]; quantity: number }>>([
@@ -283,8 +285,8 @@ export function TestPayloadGenerator({ onClose, onOrderCreated }: Props) {
         <div className="flex items-center gap-3 text-white">
           <Package className="w-6 h-6" />
           <div>
-            <h2 className="text-lg font-semibold">Test Payload Generator</h2>
-            <p className="text-sm text-white/80">Create Shopify-style test orders</p>
+            <h2 className="text-lg font-semibold">{t('testPayloadGenerator')}</h2>
+            <p className="text-sm text-white/80">{t('generateShopifyOrders')}</p>
           </div>
         </div>
         {onClose && (
@@ -305,16 +307,16 @@ export function TestPayloadGenerator({ onClose, onOrderCreated }: Props) {
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                 <Store className="w-4 h-4" />
-                Store / Partner
+                {t('store')}
               </label>
               {isLoadingStores ? (
                 <div className="flex items-center gap-2 text-gray-500 text-sm">
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  Loading stores...
+                  {t('loadingOrders')}
                 </div>
               ) : stores.length === 0 ? (
                 <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-amber-800 text-sm">
-                  No stores found. Please create a store first.
+                  {t('noStoresAvailable')}
                 </div>
               ) : (
                 <select
@@ -334,7 +336,7 @@ export function TestPayloadGenerator({ onClose, onOrderCreated }: Props) {
             {/* Customer Selection */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Customer
+                {t('customerName')}
               </label>
               <select
                 value={`${customer.first_name} ${customer.last_name}`}
@@ -358,7 +360,7 @@ export function TestPayloadGenerator({ onClose, onOrderCreated }: Props) {
             {/* Delivery Date */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Delivery Date
+                {t('deliveryDateLabel')}
               </label>
               <input
                 type="date"
@@ -375,7 +377,7 @@ export function TestPayloadGenerator({ onClose, onOrderCreated }: Props) {
             <div>
               <div className="flex items-center justify-between mb-2">
                 <label className="block text-sm font-medium text-gray-700">
-                  Line Items
+                  {t('orderItems')}
                 </label>
                 <button
                   onClick={addLineItem}
@@ -383,7 +385,7 @@ export function TestPayloadGenerator({ onClose, onOrderCreated }: Props) {
                   className="flex items-center gap-1 text-sm text-[#476a30] hover:text-[#3d5a28] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                 >
                   <Plus className="w-4 h-4" />
-                  Add Item
+                  {t('addItem')}
                 </button>
               </div>
 
@@ -424,7 +426,7 @@ export function TestPayloadGenerator({ onClose, onOrderCreated }: Props) {
               </div>
 
               <div className="mt-3 pt-3 border-t border-gray-200 flex justify-between text-sm font-medium">
-                <span>Total:</span>
+                <span>{t('total')}:</span>
                 <span className="text-lg">${totalPrice.toFixed(2)}</span>
               </div>
             </div>
@@ -434,7 +436,7 @@ export function TestPayloadGenerator({ onClose, onOrderCreated }: Props) {
           <div>
             <div className="flex items-center justify-between mb-2">
               <label className="block text-sm font-medium text-gray-700">
-                Shopify Payload Preview
+                {t('generatedPayload')}
               </label>
               <button
                 onClick={copyPayload}
@@ -443,12 +445,12 @@ export function TestPayloadGenerator({ onClose, onOrderCreated }: Props) {
                 {copied ? (
                   <>
                     <Check className="w-4 h-4 text-[#476a30]" />
-                    Copied!
+                    {t('copied')}
                   </>
                 ) : (
                   <>
                     <Copy className="w-4 h-4" />
-                    Copy JSON
+                    {t('copyPayload')}
                   </>
                 )}
               </button>
@@ -488,7 +490,7 @@ export function TestPayloadGenerator({ onClose, onOrderCreated }: Props) {
             onClick={onClose}
             className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
           >
-            Close
+            {t('close')}
           </button>
         )}
         <button
@@ -499,12 +501,12 @@ export function TestPayloadGenerator({ onClose, onOrderCreated }: Props) {
           {isSubmitting ? (
             <>
               <Loader2 className="w-4 h-4 animate-spin" />
-              Creating...
+              {t('submitting')}
             </>
           ) : (
             <>
               <Send className="w-4 h-4" />
-              Create Order
+              {t('submitToSupabase')}
             </>
           )}
         </button>

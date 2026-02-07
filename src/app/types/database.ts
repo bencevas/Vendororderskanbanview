@@ -3,6 +3,7 @@
 
 export type OrderStatus = 'pending' | 'confirmed' | 'processing' | 'ready';
 export type UserRole = 'owner' | 'member';
+export type Locale = 'en' | 'hu';
 
 export interface Database {
   public: {
@@ -75,6 +76,7 @@ export interface Database {
           name: string;
           role: UserRole;
           store_id: string | null;
+          locale: Locale;
           created_at: string;
         };
         Insert: {
@@ -83,6 +85,7 @@ export interface Database {
           name: string;
           role?: UserRole;
           store_id?: string | null;
+          locale?: Locale;
           created_at?: string;
         };
         Update: {
@@ -91,6 +94,7 @@ export interface Database {
           name?: string;
           role?: UserRole;
           store_id?: string | null;
+          locale?: Locale;
           created_at?: string;
         };
       };

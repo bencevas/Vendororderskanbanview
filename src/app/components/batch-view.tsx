@@ -2,6 +2,7 @@ import { Check, XIcon, Plus, Minus, Loader2, AlertCircle } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { Order } from './order-card';
 import { fetchOrderItems, updateOrderItemQuantity, updateOrderItemConfirmation, OrderItem } from '@/app/services/api';
+import { useLocale } from '@/app/contexts/LocaleContext';
 
 interface BatchItem {
   itemName: string;
@@ -27,6 +28,7 @@ interface BatchViewProps {
 }
 
 export function BatchView({ orders, date, onOrderUpdate }: BatchViewProps) {
+  const { t } = useLocale();
   const [batchItems, setBatchItems] = useState<BatchItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -358,10 +360,10 @@ export function BatchView({ orders, date, onOrderUpdate }: BatchViewProps) {
     <div className="h-full overflow-y-auto px-3 min-[481px]:px-6 py-3 min-[481px]:py-4">
       <div className="mb-3 min-[481px]:mb-4">
         <h2 className="text-base min-[481px]:text-lg font-semibold text-gray-900">
-          Batch Processing - {date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+          {t('batchProcessing')} - {date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
         </h2>
         <p className="text-xs min-[481px]:text-sm text-gray-600 mt-1">
-          Items grouped by type for batch preparation
+          {t('itemsGroupedByType')}
         </p>
       </div>
 
@@ -369,7 +371,7 @@ export function BatchView({ orders, date, onOrderUpdate }: BatchViewProps) {
         <div className="flex items-center justify-center py-12">
           <div className="flex flex-col items-center gap-4">
             <Loader2 className="w-8 h-8 text-gray-400 animate-spin" />
-            <p className="text-gray-600">Loading batch items...</p>
+            <p className="text-gray-600">{t('loadingBatchItems')}</p>
           </div>
         </div>
       ) : error ? (
@@ -377,14 +379,14 @@ export function BatchView({ orders, date, onOrderUpdate }: BatchViewProps) {
           <div className="flex flex-col items-center gap-4 max-w-md text-center">
             <AlertCircle className="w-12 h-12 text-[#EA776C]" />
             <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Error Loading Items</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">{t('errorLoadingItems')}</h3>
               <p className="text-gray-600">{error}</p>
             </div>
           </div>
         </div>
       ) : batchItems.length === 0 ? (
         <div className="flex items-center justify-center py-12">
-          <p className="text-gray-500">No items found for this date</p>
+          <p className="text-gray-500">{t('noItemsFound')}</p>
         </div>
       ) : (
         <div className="space-y-4 min-[481px]:space-y-6">
@@ -401,7 +403,7 @@ export function BatchView({ orders, date, onOrderUpdate }: BatchViewProps) {
                 <div className="min-w-0 flex-1">
                   <h3 className="font-semibold text-gray-900 text-sm min-[481px]:text-lg truncate">{item.itemName}</h3>
                   <p className="text-xs min-[481px]:text-sm text-gray-600 mt-0.5 min-[481px]:mt-1">
-                    {item.instances.length} order{item.instances.length > 1 ? 's' : ''} • {getTotalQuantityForItem(item).toFixed(1)} {item.unit}
+                    {item.instances.length} {item.instances.length > 1 ? t('orders') : t('order')} • {getTotalQuantityForItem(item).toFixed(1)} {item.unit}
                   </p>
                 </div>
               </div>
@@ -409,7 +411,7 @@ export function BatchView({ orders, date, onOrderUpdate }: BatchViewProps) {
                 onClick={() => confirmAllForItem(item.itemName)}
                 className="px-2 py-1 min-[481px]:px-4 min-[481px]:py-2 bg-[#476a30] hover:bg-[#3d5a28] text-white text-xs min-[481px]:text-sm font-medium rounded-lg transition-colors whitespace-nowrap"
               >
-                Confirm All
+                {t('confirmAll')}
               </button>
             </div>
 
@@ -491,14 +493,14 @@ export function BatchView({ orders, date, onOrderUpdate }: BatchViewProps) {
                             <button
                               onClick={() => handleConfirm(item.itemName, instance.id)}
                               className="w-9 h-9 flex items-center justify-center bg-[#476a30] hover:bg-[#3d5a28] text-white rounded-lg transition-colors"
-                              title="Confirm"
+                              title={t('confirm')}
                             >
                               <Check className="w-4 h-4" />
                             </button>
                             <button
                               onClick={() => handleDeny(item.itemName, instance.id)}
                               className="w-9 h-9 flex items-center justify-center bg-[#EA776C] hover:bg-[#d4665c] text-white rounded-lg transition-colors"
-                              title="Deny"
+                              title={t('deny')}
                             >
                               <XIcon className="w-4 h-4" />
                             </button>
@@ -507,19 +509,19 @@ export function BatchView({ orders, date, onOrderUpdate }: BatchViewProps) {
                           <button
                             onClick={() => handleRevertConfirmation(item.itemName, instance.id)}
                             className="h-9 px-3 flex items-center justify-center gap-1 text-[#476a30] bg-[#476a30]/10 hover:bg-[#476a30]/20 rounded-lg text-xs font-medium transition-colors cursor-pointer"
-                            title="Click to revert"
+                            title={t('clickToRevert')}
                           >
                             <Check className="w-3 h-3" />
-                            <span>OK</span>
+                            <span>{t('ok')}</span>
                           </button>
                         ) : (
                           <button
                             onClick={() => handleRevertConfirmation(item.itemName, instance.id)}
                             className="h-9 px-3 flex items-center justify-center gap-1 text-[#EA776C] bg-[#EA776C]/10 hover:bg-[#EA776C]/20 rounded-lg text-xs font-medium transition-colors cursor-pointer"
-                            title="Click to revert"
+                            title={t('clickToRevert')}
                           >
                             <XIcon className="w-3 h-3" />
-                            <span>No</span>
+                            <span>{t('no')}</span>
                           </button>
                         )}
                       </div>
@@ -593,14 +595,14 @@ export function BatchView({ orders, date, onOrderUpdate }: BatchViewProps) {
                           <button
                             onClick={() => handleConfirm(item.itemName, instance.id)}
                             className="w-9 h-9 flex items-center justify-center bg-[#476a30] hover:bg-[#3d5a28] text-white rounded-lg transition-colors"
-                            title="Confirm"
+                            title={t('confirm')}
                           >
                             <Check className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => handleDeny(item.itemName, instance.id)}
                             className="w-9 h-9 flex items-center justify-center bg-[#EA776C] hover:bg-[#d4665c] text-white rounded-lg transition-colors"
-                            title="Deny"
+                            title={t('deny')}
                           >
                             <XIcon className="w-4 h-4" />
                           </button>
@@ -609,19 +611,19 @@ export function BatchView({ orders, date, onOrderUpdate }: BatchViewProps) {
                         <button
                           onClick={() => handleRevertConfirmation(item.itemName, instance.id)}
                           className="flex items-center gap-1 text-[#476a30] bg-[#476a30]/10 hover:bg-[#476a30]/20 px-2 py-1 rounded text-xs font-medium cursor-pointer transition-colors"
-                          title="Click to revert"
+                          title={t('clickToRevert')}
                         >
                           <Check className="w-3 h-3" />
-                          <span>OK</span>
+                          <span>{t('ok')}</span>
                         </button>
                       ) : (
                         <button
                           onClick={() => handleRevertConfirmation(item.itemName, instance.id)}
                           className="flex items-center gap-1 text-[#EA776C] bg-[#EA776C]/10 hover:bg-[#EA776C]/20 px-2 py-1 rounded text-xs font-medium cursor-pointer transition-colors"
-                          title="Click to revert"
+                          title={t('clickToRevert')}
                         >
                           <XIcon className="w-3 h-3" />
-                          <span>Denied</span>
+                          <span>{t('denied')}</span>
                         </button>
                       )}
                     </div>

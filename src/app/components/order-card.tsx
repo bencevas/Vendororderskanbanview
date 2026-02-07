@@ -1,4 +1,5 @@
 import { Package, ShoppingBag, DollarSign } from 'lucide-react';
+import { useLocale } from '@/app/contexts/LocaleContext';
 
 export interface Order {
   id: string;
@@ -23,6 +24,16 @@ const statusColors = {
 };
 
 export function OrderCard({ order, onClick }: OrderCardProps) {
+  const { t } = useLocale();
+  
+  // Translate status
+  const statusTranslations = {
+    pending: t('pending'),
+    confirmed: t('confirmed'),
+    processing: t('processing'),
+    ready: t('ready'),
+  };
+
   return (
     <div 
       onClick={onClick}
@@ -34,14 +45,14 @@ export function OrderCard({ order, onClick }: OrderCardProps) {
           <p className="text-xs min-[481px]:text-sm text-gray-600 mt-0.5 min-[481px]:mt-1 truncate">{order.customerName}</p>
         </div>
         <span className={`px-2 py-1 rounded-full text-xs font-medium border whitespace-nowrap ${statusColors[order.status]}`}>
-          {order.status}
+          {statusTranslations[order.status]}
         </span>
       </div>
       
       <div className="space-y-2">
         <div className="flex items-center gap-2 text-sm text-gray-700">
           <Package className="w-4 h-4 text-gray-500" />
-          <span>{order.itemCount} {order.itemCount === 1 ? 'item' : 'items'}</span>
+          <span>{order.itemCount} {order.itemCount === 1 ? t('item') : t('items')}</span>
         </div>
         
         <div className="flex items-center gap-2 text-sm text-gray-700">

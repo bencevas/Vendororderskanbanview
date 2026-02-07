@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { Order } from './order-card';
 import { fetchOrderItems, updateOrderStatus, updateOrderItemQuantity, updateOrderItemConfirmation, saveOrderChanges, OrderItem } from '@/app/services/api';
 import { getOrderItems as getMockOrderItems } from '@/app/mock-order-items';
+import { useLocale } from '@/app/contexts/LocaleContext';
 
 interface OrderDetailsModalProps {
   order: Order;
@@ -20,12 +21,21 @@ const statusColors = {
 const statuses: Order['status'][] = ['pending', 'confirmed', 'processing', 'ready'];
 
 export function OrderDetailsModal({ order, onClose, onOrderUpdate }: OrderDetailsModalProps) {
+  const { t } = useLocale();
   const [items, setItems] = useState<OrderItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [currentStatus, setCurrentStatus] = useState(order.status);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  
+  // Translate status
+  const statusTranslations = {
+    pending: t('pending'),
+    confirmed: t('confirmed'),
+    processing: t('processing'),
+    ready: t('ready'),
+  };
 
   // Fetch order items from API when modal opens
   useEffect(() => {
@@ -182,7 +192,7 @@ export function OrderDetailsModal({ order, onClose, onOrderUpdate }: OrderDetail
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                 className={`flex items-center gap-1 min-[481px]:gap-2 px-2 min-[481px]:px-3 py-1 min-[481px]:py-1.5 rounded-full text-xs min-[481px]:text-sm font-medium border ${statusColors[currentStatus]} hover:opacity-80 transition-opacity`}
               >
-                <span>{currentStatus}</span>
+                <span>{statusTranslations[currentStatus]}</span>
                 <ChevronDown className="w-3 h-3 min-[481px]:w-4 min-[481px]:h-4" />
               </button>
               
@@ -205,7 +215,7 @@ export function OrderDetailsModal({ order, onClose, onOrderUpdate }: OrderDetail
                         }`}
                       >
                         <span className={`inline-block px-2 py-1 rounded-full text-xs ${statusColors[status]}`}>
-                          {status}
+                          {statusTranslations[status]}
                         </span>
                       </button>
                     ))}
@@ -228,11 +238,11 @@ export function OrderDetailsModal({ order, onClose, onOrderUpdate }: OrderDetail
         <div className="px-4 min-[481px]:px-6 py-3 min-[481px]:py-4 bg-gray-50 border-b border-gray-200">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs min-[481px]:text-sm text-gray-600">Customer</p>
+              <p className="text-xs min-[481px]:text-sm text-gray-600">{t('customer')}</p>
               <p className="font-medium text-gray-900 text-sm min-[481px]:text-base">{order.customerName}</p>
             </div>
             <div className="text-right">
-              <p className="text-xs min-[481px]:text-sm text-gray-600">Delivery Date</p>
+              <p className="text-xs min-[481px]:text-sm text-gray-600">{t('deliveryDate')}</p>
               <p className="font-medium text-gray-900 text-sm min-[481px]:text-base">
                 {order.deliveryDate.toLocaleDateString('en-US', { 
                   month: 'short', 
@@ -250,7 +260,7 @@ export function OrderDetailsModal({ order, onClose, onOrderUpdate }: OrderDetail
             <div className="flex items-center justify-center py-12">
               <div className="flex flex-col items-center gap-4">
                 <Loader2 className="w-8 h-8 text-gray-400 animate-spin" />
-                <p className="text-gray-600">Loading order items...</p>
+                <p className="text-gray-600">{t('loadingOrderItems')}</p>
               </div>
             </div>
           ) : error ? (
@@ -258,7 +268,7 @@ export function OrderDetailsModal({ order, onClose, onOrderUpdate }: OrderDetail
               <div className="flex flex-col items-center gap-4 max-w-md text-center">
                 <AlertCircle className="w-12 h-12 text-[#EA776C]" />
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Error Loading Items</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">{t('errorLoadingItems')}</h3>
                   <p className="text-gray-600">{error}</p>
                 </div>
               </div>
@@ -342,14 +352,14 @@ export function OrderDetailsModal({ order, onClose, onOrderUpdate }: OrderDetail
                           <button
                             onClick={() => handleConfirm(item.id)}
                             className="w-9 h-9 flex items-center justify-center bg-[#476a30] hover:bg-[#3d5a28] text-white rounded-lg transition-colors"
-                            title="Confirm"
+                            title={t('confirm')}
                           >
                             <Check className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => handleDeny(item.id)}
                             className="w-9 h-9 flex items-center justify-center bg-[#EA776C] hover:bg-[#d4665c] text-white rounded-lg transition-colors"
-                            title="Deny"
+                            title={t('deny')}
                           >
                             <XIcon className="w-4 h-4" />
                           </button>
@@ -358,19 +368,19 @@ export function OrderDetailsModal({ order, onClose, onOrderUpdate }: OrderDetail
                         <button
                           onClick={() => handleRevertConfirmation(item.id)}
                           className="h-9 px-3 flex items-center justify-center gap-1 text-[#476a30] bg-[#476a30]/10 hover:bg-[#476a30]/20 rounded-lg text-xs font-medium transition-colors cursor-pointer"
-                          title="Click to revert"
+                          title={t('clickToRevert')}
                         >
                           <Check className="w-3 h-3" />
-                          <span>OK</span>
+                          <span>{t('ok')}</span>
                         </button>
                       ) : (
                         <button
                           onClick={() => handleRevertConfirmation(item.id)}
                           className="h-9 px-3 flex items-center justify-center gap-1 text-[#EA776C] bg-[#EA776C]/10 hover:bg-[#EA776C]/20 rounded-lg text-xs font-medium transition-colors cursor-pointer"
-                          title="Click to revert"
+                          title={t('clickToRevert')}
                         >
                           <XIcon className="w-3 h-3" />
-                          <span>No</span>
+                          <span>{t('no')}</span>
                         </button>
                       )}
                     </div>
@@ -438,12 +448,12 @@ export function OrderDetailsModal({ order, onClose, onOrderUpdate }: OrderDetail
                           </div>
                           
                           <div className="text-gray-700">
-                            <span className="text-gray-500">Price: </span>
+                            <span className="text-gray-500">{t('price')}: </span>
                             <span className="font-medium">${item.price.toFixed(2)}</span>
                           </div>
                           
                           <div className="text-gray-900">
-                            <span className="text-gray-500">Total: </span>
+                            <span className="text-gray-500">{t('total')}: </span>
                             <span className="font-semibold text-lg">${(item.actualQuantity * item.price).toFixed(2)}</span>
                           </div>
                         </div>
@@ -456,14 +466,14 @@ export function OrderDetailsModal({ order, onClose, onOrderUpdate }: OrderDetail
                             <button
                               onClick={() => handleConfirm(item.id)}
                               className="w-10 h-10 flex items-center justify-center bg-[#476a30] hover:bg-[#3d5a28] text-white rounded-lg transition-colors shadow-sm"
-                              title="Confirm availability"
+                              title={t('confirmAvailability')}
                             >
                               <Check className="w-5 h-5" />
                             </button>
                             <button
                               onClick={() => handleDeny(item.id)}
                               className="w-10 h-10 flex items-center justify-center bg-[#EA776C] hover:bg-[#d4665c] text-white rounded-lg transition-colors shadow-sm"
-                              title="Deny availability"
+                              title={t('denyAvailability')}
                             >
                               <XIcon className="w-5 h-5" />
                             </button>
@@ -472,19 +482,19 @@ export function OrderDetailsModal({ order, onClose, onOrderUpdate }: OrderDetail
                           <button
                             onClick={() => handleRevertConfirmation(item.id)}
                             className="flex items-center gap-2 text-[#476a30] bg-[#476a30]/10 hover:bg-[#476a30]/20 px-3 py-2 rounded-lg transition-colors cursor-pointer"
-                            title="Click to revert confirmation"
+                            title={t('clickToRevert')}
                           >
                             <Check className="w-4 h-4" />
-                            <span className="text-sm font-medium">Confirmed</span>
+                            <span className="text-sm font-medium">{t('confirmed')}</span>
                           </button>
                         ) : (
                           <button
                             onClick={() => handleRevertConfirmation(item.id)}
                             className="flex items-center gap-2 text-[#EA776C] bg-[#EA776C]/10 hover:bg-[#EA776C]/20 px-3 py-2 rounded-lg transition-colors cursor-pointer"
-                            title="Click to revert denial"
+                            title={t('clickToRevert')}
                           >
                             <XIcon className="w-4 h-4" />
-                            <span className="text-sm font-medium">Denied</span>
+                            <span className="text-sm font-medium">{t('denied')}</span>
                           </button>
                         )}
                       </div>
@@ -503,16 +513,16 @@ export function OrderDetailsModal({ order, onClose, onOrderUpdate }: OrderDetail
           <div className="flex justify-between items-center mb-3 min-[481px]:mb-4 pb-3 min-[481px]:pb-4 border-b border-gray-200">
             <div>
               <p className="text-xs min-[481px]:text-sm text-gray-600">
-                {items.filter(i => i.confirmed === true).length} of {items.length} items confirmed
+                {items.filter(i => i.confirmed === true).length} {t('of')} {items.length} {t('itemsConfirmed')}
               </p>
               {items.some(i => i.confirmed === false) && (
                 <p className="text-xs min-[481px]:text-sm text-[#EA776C] mt-0.5">
-                  {items.filter(i => i.confirmed === false).length} item(s) denied
+                  {items.filter(i => i.confirmed === false).length} {t('itemsDenied')}
                 </p>
               )}
             </div>
             <div className="text-right">
-              <p className="text-xs min-[481px]:text-sm text-gray-600">Order Total</p>
+              <p className="text-xs min-[481px]:text-sm text-gray-600">{t('orderTotal')}</p>
               <p className="text-xl min-[481px]:text-2xl font-semibold text-gray-900">
                 ${calculateTotal().toFixed(2)}
               </p>
@@ -525,7 +535,7 @@ export function OrderDetailsModal({ order, onClose, onOrderUpdate }: OrderDetail
               onClick={onClose}
               className="flex-1 min-[481px]:flex-none px-4 py-2.5 min-[481px]:py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm min-[481px]:text-base"
             >
-              Close
+              {t('close')}
             </button>
             <button
               onClick={async () => {
@@ -560,7 +570,7 @@ export function OrderDetailsModal({ order, onClose, onOrderUpdate }: OrderDetail
                   }, 100);
                 } catch (err) {
                   console.error('❌ Error saving changes:', err);
-                  alert('Failed to save changes. Please try again.');
+                  alert(t('failedToSave'));
                 } finally {
                   setIsSaving(false);
                 }
@@ -569,7 +579,7 @@ export function OrderDetailsModal({ order, onClose, onOrderUpdate }: OrderDetail
               className="flex-1 min-[481px]:flex-none px-4 py-2.5 min-[481px]:py-2 text-white bg-[#476a30] rounded-lg hover:bg-[#3d5a28] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm min-[481px]:text-base"
             >
               {isSaving && <Loader2 className="w-4 h-4 animate-spin" />}
-              Save Changes
+              {t('saveChanges')}
             </button>
           </div>
         </div>

@@ -7,13 +7,16 @@ import { BatchView } from '@/app/components/batch-view';
 import { fetchOrders } from '@/app/services/api';
 import { generateMockOrders } from '@/app/mock-data';
 import { AuthProvider, useAuth } from '@/app/contexts/AuthContext';
+import { LocaleProvider, useLocale } from '@/app/contexts/LocaleContext';
 import { LoginForm } from '@/app/components/auth/LoginForm';
 import { useRealtimeOrders } from '@/app/hooks/useRealtimeOrders';
 import { TestPayloadGenerator } from '@/app/components/test-generator/TestPayloadGenerator';
+import { SettingsModal } from '@/app/components/settings/SettingsModal';
 
 // Main content component that uses auth context
 function AppContent() {
   const { user, isLoading: authLoading, isConfigured, signOut } = useAuth();
+  const { t } = useLocale();
   const [startDate, setStartDate] = useState(startOfDay(new Date()));
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -23,6 +26,7 @@ function AppContent() {
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showTestGenerator, setShowTestGenerator] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   
   const days = Array.from({ length: 5 }, (_, i) => addDays(startDate, i));
@@ -155,14 +159,14 @@ function AppContent() {
   };
 
   // Display name and role
-  const displayName = user?.name || 'Guest User';
+  const displayName = user?.name || t('guestUser');
   const displayRole = user?.role 
     ? user.role === 'super_admin' 
-      ? 'Super Admin' 
+      ? t('superAdmin') 
       : user.role === 'owner' 
-        ? 'Store Owner' 
-        : 'Team Member'
-    : 'Not signed in';
+        ? t('storeOwner') 
+        : t('teamMember')
+    : t('notSignedIn');
   const displayEmail = user?.email || '';
   
   return (
@@ -173,7 +177,7 @@ function AppContent() {
           
           {/* Row 1: Title + Actions (mobile) / Title only (desktop) */}
           <div className="flex items-center justify-between mb-3 min-[481px]:mb-4">
-            <h1 className="text-lg min-[481px]:text-2xl font-semibold text-gray-900">Order Management</h1>
+            <h1 className="text-lg min-[481px]:text-2xl font-semibold text-gray-900">{t('orderManagement')}</h1>
             
             {/* Mobile: Action buttons in row 1 */}
             <div className="flex items-center gap-2 min-[481px]:hidden">
@@ -181,16 +185,16 @@ function AppContent() {
               <button
                 onClick={() => setShowTestGenerator(true)}
                 className="px-2 py-1 text-xs font-medium text-[#476a30] bg-[#476a30]/10 hover:bg-[#476a30]/20 rounded-lg transition-colors cursor-pointer"
-                title="Generate test orders"
+                title={t('testOrder')}
               >
-                + Test
+                {t('test')}
               </button>
 
               {/* Refresh Button */}
               <button
                 onClick={refreshOrders}
                 className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
-                title="Refresh orders"
+                title={t('refreshOrders')}
               >
                 <RefreshCw className="w-4 h-4 text-gray-600" />
               </button>
@@ -234,7 +238,7 @@ function AppContent() {
                 }`}
               >
                 <LayoutGrid className="w-4 h-4" />
-                By Order
+                {t('byOrder')}
               </button>
               <button
                 onClick={() => setViewMode('batch')}
@@ -245,7 +249,7 @@ function AppContent() {
                 }`}
               >
                 <List className="w-4 h-4" />
-                By Item
+                {t('byItem')}
               </button>
             </div>
           </div>
@@ -296,7 +300,7 @@ function AppContent() {
                 }`}
               >
                 <LayoutGrid className="w-4 h-4" />
-                By Order
+                {t('byOrder')}
               </button>
               <button
                 onClick={() => setViewMode('batch')}
@@ -307,7 +311,7 @@ function AppContent() {
                 }`}
               >
                 <List className="w-4 h-4" />
-                By Item
+                {t('byItem')}
               </button>
             </div>
 
@@ -340,7 +344,7 @@ function AppContent() {
             </button>
             
             <div className="ml-auto text-sm text-gray-600">
-              Showing {format(days[0], 'MMM d')} - {format(days[4], 'MMM d, yyyy')}
+              {t('showing')} {format(days[0], 'MMM d')} - {format(days[4], 'MMM d, yyyy')}
             </div>
             
             {/* User Profile Section */}
@@ -349,16 +353,16 @@ function AppContent() {
               <button
                 onClick={() => setShowTestGenerator(true)}
                 className="px-3 py-1.5 text-sm font-medium text-[#476a30] bg-[#476a30]/10 hover:bg-[#476a30]/20 rounded-lg transition-colors cursor-pointer"
-                title="Generate test orders"
+                title={t('testOrder')}
               >
-                + Test Order
+                {t('testOrder')}
               </button>
 
               {/* Refresh Button */}
               <button
                 onClick={refreshOrders}
                 className="p-2 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
-                title="Refresh orders"
+                title={t('refreshOrders')}
               >
                 <RefreshCw className="w-5 h-5 text-gray-600" />
               </button>
@@ -416,15 +420,21 @@ function AppContent() {
                     <div className="py-1">
                       <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-3 cursor-pointer">
                         <User className="w-4 h-4 text-gray-500" />
-                        <span>My Profile</span>
+                        <span>{t('myProfile')}</span>
                       </button>
-                      <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-3 cursor-pointer">
+                      <button 
+                        onClick={() => {
+                          setShowSettingsModal(true);
+                          setIsProfileDropdownOpen(false);
+                        }}
+                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-3 cursor-pointer"
+                      >
                         <Settings className="w-4 h-4 text-gray-500" />
-                        <span>Settings</span>
+                        <span>{t('settings')}</span>
                       </button>
                       <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-3 cursor-pointer">
                         <HelpCircle className="w-4 h-4 text-gray-500" />
-                        <span>Help & Support</span>
+                        <span>{t('helpSupport')}</span>
                       </button>
                     </div>
                     
@@ -434,15 +444,15 @@ function AppContent() {
                         className="w-full text-left px-4 py-2 text-sm text-[#EA776C] hover:bg-[#EA776C]/10 transition-colors flex items-center gap-3 cursor-pointer"
                       >
                         <LogOut className="w-4 h-4" />
-                        <span>Sign Out</span>
+                        <span>{t('signOut')}</span>
                       </button>
                     </div>
                   </>
                 ) : (
                   <>
                     <div className="px-4 py-3 border-b border-gray-100">
-                      <p className="font-medium text-gray-900">Welcome</p>
-                      <p className="text-sm text-gray-600">Sign in to manage orders</p>
+                      <p className="font-medium text-gray-900">{t('welcome')}</p>
+                      <p className="text-sm text-gray-600">{t('signInToManage')}</p>
                     </div>
                     
                     {isConfigured ? (
@@ -455,13 +465,13 @@ function AppContent() {
                           className="w-full text-left px-4 py-2 text-sm text-[#476a30] hover:bg-[#476a30]/10 transition-colors flex items-center gap-3 cursor-pointer"
                         >
                           <LogIn className="w-4 h-4" />
-                          <span>Sign In</span>
+                          <span>{t('signIn')}</span>
                         </button>
                       </div>
                     ) : (
                       <div className="px-4 py-3 text-sm text-gray-500">
-                        <p>Authentication not configured.</p>
-                        <p className="text-xs mt-1">Set up Supabase to enable login.</p>
+                        <p>{t('authNotConfigured')}</p>
+                        <p className="text-xs mt-1">{t('setupSupabase')}</p>
                       </div>
                     )}
                   </>
@@ -477,7 +487,7 @@ function AppContent() {
         <div className="max-w-[1600px] mx-auto px-3 min-[481px]:px-6 py-8 min-[481px]:py-12 flex items-center justify-center">
           <div className="flex flex-col items-center gap-4">
             <Loader2 className="w-8 h-8 text-gray-400 animate-spin" />
-            <p className="text-gray-600">Loading orders...</p>
+            <p className="text-gray-600">{t('loadingOrders')}</p>
           </div>
         </div>
       ) : error ? (
@@ -485,7 +495,7 @@ function AppContent() {
           <div className="flex flex-col items-center gap-4 max-w-md text-center">
             <AlertCircle className="w-12 h-12 text-[#EA776C]" />
             <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Error Loading Orders</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">{t('errorLoadingOrders')}</h3>
               <p className="text-gray-600 mb-4">{error}</p>
               <button
                 onClick={() => {
@@ -496,7 +506,7 @@ function AppContent() {
                 }}
                 className="px-4 py-2 bg-[#476a30] text-white rounded-lg hover:bg-[#3d5a28] transition-colors cursor-pointer"
               >
-                Retry
+                {t('retry')}
               </button>
             </div>
           </div>
@@ -516,7 +526,7 @@ function AppContent() {
                     <div className="flex items-center justify-between">
                       <div>
                         <h2 className="font-semibold text-gray-900">
-                          {index === 0 && isToday(day) ? 'Today' : format(day, 'EEEE')}
+                          {index === 0 && isToday(day) ? t('today') : format(day, 'EEEE')}
                         </h2>
                         <p className="text-sm text-gray-600">{format(day, 'MMM d, yyyy')}</p>
                       </div>
@@ -540,7 +550,7 @@ function AppContent() {
                       ))
                     ) : (
                       <div className="text-center py-8 text-gray-500 text-sm">
-                        No orders scheduled
+                        {t('noOrdersScheduled')}
                       </div>
                     )}
                   </div>
@@ -599,15 +609,22 @@ function AppContent() {
           />
         </div>
       )}
+
+      {/* Settings Modal */}
+      {showSettingsModal && (
+        <SettingsModal onClose={() => setShowSettingsModal(false)} />
+      )}
     </div>
   );
 }
 
-// Main App component with AuthProvider wrapper
+// Main App component with providers
 export default function App() {
   return (
     <AuthProvider>
-      <AppContent />
+      <LocaleProvider>
+        <AppContent />
+      </LocaleProvider>
     </AuthProvider>
   );
 }
