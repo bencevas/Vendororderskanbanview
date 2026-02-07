@@ -130,6 +130,9 @@ export const translations = {
     hungarian: 'Magyar',
     saveSettings: 'Save',
     settingsTitle: 'Settings',
+    theme: 'Theme',
+    light: 'Light',
+    dark: 'Dark',
   },
   
   hu: {
@@ -170,7 +173,7 @@ export const translations = {
     errorLoadingItems: 'Hiba a tételek betöltésekor',
     price: 'Ár',
     total: 'Összesen',
-    was: 'volt',
+    was: 'eredetileg:',
     confirmAvailability: 'Elérhetőség megerősítése',
     denyAvailability: 'Elérhetőség elutasítása',
     clickToRevert: 'Kattints a visszavonáshoz',
@@ -261,6 +264,9 @@ export const translations = {
     hungarian: 'Magyar',
     saveSettings: 'Mentés',
     settingsTitle: 'Beállítások',
+    theme: 'Téma',
+    light: 'Világos',
+    dark: 'Sötét',
   },
 } as const;
 

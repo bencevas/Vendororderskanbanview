@@ -359,10 +359,10 @@ export function BatchView({ orders, date, onOrderUpdate }: BatchViewProps) {
   return (
     <div className="h-full overflow-y-auto px-3 min-[481px]:px-6 py-3 min-[481px]:py-4">
       <div className="mb-3 min-[481px]:mb-4">
-        <h2 className="text-base min-[481px]:text-lg font-semibold text-gray-900">
+        <h2 className="text-base min-[481px]:text-lg font-semibold text-gray-900 dark:text-gray-100">
           {t('batchProcessing')} - {date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
         </h2>
-        <p className="text-xs min-[481px]:text-sm text-gray-600 mt-1">
+        <p className="text-xs min-[481px]:text-sm text-gray-600 dark:text-gray-400 mt-1">
           {t('itemsGroupedByType')}
         </p>
       </div>
@@ -370,8 +370,8 @@ export function BatchView({ orders, date, onOrderUpdate }: BatchViewProps) {
       {isLoading ? (
         <div className="flex items-center justify-center py-12">
           <div className="flex flex-col items-center gap-4">
-            <Loader2 className="w-8 h-8 text-gray-400 animate-spin" />
-            <p className="text-gray-600">{t('loadingBatchItems')}</p>
+            <Loader2 className="w-8 h-8 text-gray-400 dark:text-gray-500 animate-spin" />
+            <p className="text-gray-600 dark:text-gray-400">{t('loadingBatchItems')}</p>
           </div>
         </div>
       ) : error ? (
@@ -379,30 +379,30 @@ export function BatchView({ orders, date, onOrderUpdate }: BatchViewProps) {
           <div className="flex flex-col items-center gap-4 max-w-md text-center">
             <AlertCircle className="w-12 h-12 text-[#EA776C]" />
             <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">{t('errorLoadingItems')}</h3>
-              <p className="text-gray-600">{error}</p>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">{t('errorLoadingItems')}</h3>
+              <p className="text-gray-600 dark:text-gray-400">{error}</p>
             </div>
           </div>
         </div>
       ) : batchItems.length === 0 ? (
         <div className="flex items-center justify-center py-12">
-          <p className="text-gray-500">{t('noItemsFound')}</p>
+          <p className="text-gray-500 dark:text-gray-400">{t('noItemsFound')}</p>
         </div>
       ) : (
         <div className="space-y-4 min-[481px]:space-y-6">
           {batchItems.map((item) => (
-          <div key={item.itemName} className="bg-white border border-gray-200 rounded-lg p-3 min-[481px]:p-5">
+          <div key={item.itemName} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3 min-[481px]:p-5">
             {/* Item Header */}
-            <div className="flex items-center justify-between mb-3 min-[481px]:mb-4 pb-3 min-[481px]:pb-4 border-b border-gray-200">
+            <div className="flex items-center justify-between mb-3 min-[481px]:mb-4 pb-3 min-[481px]:pb-4 border-b border-gray-200 dark:border-gray-700">
               <div className="flex items-center gap-2 min-[481px]:gap-4">
                 <img
                   src={item.image}
                   alt={item.itemName}
-                  className="w-10 h-10 min-[481px]:w-16 min-[481px]:h-16 object-cover rounded-lg bg-gray-100"
+                  className="w-10 h-10 min-[481px]:w-16 min-[481px]:h-16 object-cover rounded-lg bg-gray-100 dark:bg-gray-700"
                 />
                 <div className="min-w-0 flex-1">
-                  <h3 className="font-semibold text-gray-900 text-sm min-[481px]:text-lg truncate">{item.itemName}</h3>
-                  <p className="text-xs min-[481px]:text-sm text-gray-600 mt-0.5 min-[481px]:mt-1">
+                  <h3 className="font-semibold text-gray-900 dark:text-gray-100 text-sm min-[481px]:text-lg truncate">{item.itemName}</h3>
+                  <p className="text-xs min-[481px]:text-sm text-gray-600 dark:text-gray-400 mt-0.5 min-[481px]:mt-1">
                     {item.instances.length} {item.instances.length > 1 ? t('orders') : t('order')} • {getTotalQuantityForItem(item).toFixed(1)} {item.unit}
                   </p>
                 </div>
@@ -422,10 +422,10 @@ export function BatchView({ orders, date, onOrderUpdate }: BatchViewProps) {
                   key={instance.id}
                   className={`p-2 min-[481px]:p-3 rounded-lg border transition-all ${
                     instance.confirmed === false
-                      ? 'opacity-60 border-[#EA776C]/30 bg-[#EA776C]/10'
+                      ? 'opacity-60 border-[#EA776C]/30 dark:border-[#EA776C]/40 bg-[#EA776C]/10 dark:bg-[#EA776C]/20'
                       : instance.confirmed === true
-                      ? 'border-[#476a30]/30 bg-[#476a30]/10'
-                      : 'border-gray-200 bg-gray-50'
+                      ? 'border-[#476a30]/30 dark:border-[#476a30]/40 bg-[#476a30]/10 dark:bg-[#476a30]/20'
+                      : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50'
                   }`}
                 >
                   {/* Mobile Layout */}
@@ -433,27 +433,27 @@ export function BatchView({ orders, date, onOrderUpdate }: BatchViewProps) {
                     {/* Row 1: Order info + Price */}
                     <div className="flex items-center justify-between mb-2">
                       <div>
-                        <p className="font-medium text-gray-900 text-xs">{instance.orderCode}</p>
-                        <p className="text-xs text-gray-600">{instance.customerName}</p>
+                        <p className="font-medium text-gray-900 dark:text-gray-100 text-xs">{instance.orderCode}</p>
+                        <p className="text-xs text-gray-600 dark:text-gray-400">{instance.customerName}</p>
                       </div>
                       <div className="text-right">
-                        <p className="text-xs text-gray-900 font-medium">${(instance.actualQuantity * instance.price).toFixed(2)}</p>
-                        <p className="text-xs text-gray-500">@${instance.price.toFixed(2)}</p>
+                        <p className="text-xs text-gray-900 dark:text-gray-100 font-medium">${(instance.actualQuantity * instance.price).toFixed(2)}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">@${instance.price.toFixed(2)}</p>
                       </div>
                     </div>
                     
                     {/* Row 2: Quantity Adjuster + Action Buttons in one line */}
                     <div className="flex items-center gap-2">
                       {/* Quantity Adjuster */}
-                      <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden flex-shrink-0">
+                      <div className="flex items-center border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden flex-shrink-0">
                         <button
                           onClick={() => decrementQuantity(item.itemName, instance.id)}
                           disabled={instance.confirmed !== null}
-                          className={`px-2 py-2 bg-white hover:bg-gray-100 border-r transition-colors ${
+                          className={`px-2 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 border-r dark:border-gray-600 transition-colors rounded-l-lg ${
                             instance.confirmed !== null ? 'opacity-50 cursor-not-allowed' : ''
                           }`}
                         >
-                          <Minus className="w-4 h-4 text-gray-700" />
+                          <Minus className="w-4 h-4 text-gray-700 dark:text-gray-300" />
                         </button>
                         <input
                           type="number"
@@ -461,28 +461,28 @@ export function BatchView({ orders, date, onOrderUpdate }: BatchViewProps) {
                           value={instance.actualQuantity}
                           onChange={(e) => handleQuantityChange(item.itemName, instance.id, e.target.value)}
                           disabled={instance.confirmed !== null}
-                          className={`w-14 px-1 py-2 text-center text-sm font-medium border-0 focus:outline-none ${
+                          className={`w-16 px-2 py-2 text-center text-sm font-medium border-0 focus:outline-none rounded-none ${
                             instance.confirmed !== null
-                              ? 'bg-gray-100 cursor-not-allowed text-gray-600'
-                              : 'bg-white'
-                          } ${hasQuantityDifference(instance) ? 'bg-[#EA776C]/10' : ''}`}
+                              ? 'bg-gray-100 dark:bg-gray-700 cursor-not-allowed text-gray-600 dark:text-gray-400'
+                              : 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100'
+                          } ${hasQuantityDifference(instance) ? 'bg-[#EA776C]/10 dark:bg-[#EA776C]/20' : ''}`}
                         />
                         <button
                           onClick={() => incrementQuantity(item.itemName, instance.id)}
                           disabled={instance.confirmed !== null}
-                          className={`px-2 py-2 bg-white hover:bg-gray-100 border-l transition-colors ${
+                          className={`px-2 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 border-l dark:border-gray-600 transition-colors rounded-r-lg ${
                             instance.confirmed !== null ? 'opacity-50 cursor-not-allowed' : ''
                           }`}
                         >
-                          <Plus className="w-4 h-4 text-gray-700" />
+                          <Plus className="w-4 h-4 text-gray-700 dark:text-gray-300" />
                         </button>
                       </div>
                       
                       {/* Unit + difference */}
-                      <div className="flex flex-col text-xs text-gray-600 min-w-0">
+                      <div className="flex flex-col text-xs text-gray-600 dark:text-gray-400 min-w-0">
                         <span>{item.unit}</span>
                         {hasQuantityDifference(instance) && (
-                          <span className="text-[#EA776C]">(was {instance.orderedQuantity})</span>
+                          <span className="text-[#EA776C] whitespace-nowrap">{t('was')} {instance.orderedQuantity} ({item.unit})</span>
                         )}
                       </div>
                       
@@ -508,7 +508,7 @@ export function BatchView({ orders, date, onOrderUpdate }: BatchViewProps) {
                         ) : instance.confirmed ? (
                           <button
                             onClick={() => handleRevertConfirmation(item.itemName, instance.id)}
-                            className="h-9 px-3 flex items-center justify-center gap-1 text-[#476a30] bg-[#476a30]/10 hover:bg-[#476a30]/20 rounded-lg text-xs font-medium transition-colors cursor-pointer"
+                            className="h-9 px-3 flex items-center justify-center gap-1 text-[#476a30] dark:text-[#476a30] bg-[#476a30]/10 dark:bg-[#476a30]/20 hover:bg-[#476a30]/20 dark:hover:bg-[#476a30]/30 rounded-lg text-xs font-medium transition-colors cursor-pointer"
                             title={t('clickToRevert')}
                           >
                             <Check className="w-3 h-3" />
@@ -533,21 +533,21 @@ export function BatchView({ orders, date, onOrderUpdate }: BatchViewProps) {
                     {/* Order Info */}
                     <div className="flex items-center gap-4 flex-1">
                       <div className="min-w-[120px]">
-                        <p className="font-medium text-gray-900 text-sm">{instance.orderCode}</p>
-                        <p className="text-xs text-gray-600">{instance.customerName}</p>
+                        <p className="font-medium text-gray-900 dark:text-gray-100 text-sm">{instance.orderCode}</p>
+                        <p className="text-xs text-gray-600 dark:text-gray-400">{instance.customerName}</p>
                       </div>
 
                       {/* Quantity Adjuster */}
                       <div className="flex items-center gap-2">
-                        <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden">
+                        <div className="flex items-center border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden">
                           <button
                             onClick={() => decrementQuantity(item.itemName, instance.id)}
                             disabled={instance.confirmed !== null}
-                            className={`px-2 py-1.5 bg-white hover:bg-gray-100 border-r transition-colors ${
+                            className={`px-2 py-1.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 border-r dark:border-gray-600 transition-colors rounded-l-lg ${
                               instance.confirmed !== null ? 'opacity-50 cursor-not-allowed' : ''
                             }`}
                           >
-                            <Minus className="w-4 h-4 text-gray-700" />
+                            <Minus className="w-4 h-4 text-gray-700 dark:text-gray-300" />
                           </button>
                           <input
                             type="number"
@@ -555,34 +555,34 @@ export function BatchView({ orders, date, onOrderUpdate }: BatchViewProps) {
                             value={instance.actualQuantity}
                             onChange={(e) => handleQuantityChange(item.itemName, instance.id, e.target.value)}
                             disabled={instance.confirmed !== null}
-                            className={`w-16 px-2 py-1.5 text-center font-medium border-0 focus:outline-none ${
+                            className={`w-16 px-2 py-1.5 text-center font-medium border-0 focus:outline-none rounded-none ${
                               instance.confirmed !== null
-                                ? 'bg-gray-100 cursor-not-allowed text-gray-600'
-                                : 'bg-white focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20'
-                            } ${hasQuantityDifference(instance) ? 'bg-[#EA776C]/10' : ''}`}
+                                ? 'bg-gray-100 dark:bg-gray-700 cursor-not-allowed text-gray-600 dark:text-gray-400'
+                                : 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20'
+                            } ${hasQuantityDifference(instance) ? 'bg-[#EA776C]/10 dark:bg-[#EA776C]/20' : ''}`}
                           />
                           <button
                             onClick={() => incrementQuantity(item.itemName, instance.id)}
                             disabled={instance.confirmed !== null}
-                            className={`px-2 py-1.5 bg-white hover:bg-gray-100 border-l transition-colors ${
+                            className={`px-2 py-1.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 border-l dark:border-gray-600 transition-colors rounded-r-lg ${
                               instance.confirmed !== null ? 'opacity-50 cursor-not-allowed' : ''
                             }`}
                           >
-                            <Plus className="w-4 h-4 text-gray-700" />
+                            <Plus className="w-4 h-4 text-gray-700 dark:text-gray-300" />
                           </button>
                         </div>
-                        <span className="text-sm text-gray-600 min-w-[30px]">{item.unit}</span>
+                        <span className="text-sm text-gray-600 dark:text-gray-400 min-w-[30px]">{item.unit}</span>
                         {hasQuantityDifference(instance) && (
-                          <span className="text-xs text-[#EA776C]">(was {instance.orderedQuantity})</span>
+                          <span className="text-xs text-[#EA776C] whitespace-nowrap">{t('was')} {instance.orderedQuantity} ({item.unit})</span>
                         )}
                       </div>
 
                       {/* Price Info */}
                       <div className="flex items-center gap-4 text-sm ml-auto">
-                        <div className="text-gray-700">
-                          <span className="text-gray-500">@</span> ${instance.price.toFixed(2)}
+                        <div className="text-gray-700 dark:text-gray-300">
+                          <span className="text-gray-500 dark:text-gray-400">@</span> ${instance.price.toFixed(2)}
                         </div>
-                        <div className="text-gray-900 font-medium min-w-[80px] text-right">
+                        <div className="text-gray-900 dark:text-gray-100 font-medium min-w-[80px] text-right">
                           ${(instance.actualQuantity * instance.price).toFixed(2)}
                         </div>
                       </div>
@@ -610,7 +610,7 @@ export function BatchView({ orders, date, onOrderUpdate }: BatchViewProps) {
                       ) : instance.confirmed ? (
                         <button
                           onClick={() => handleRevertConfirmation(item.itemName, instance.id)}
-                          className="flex items-center gap-1 text-[#476a30] bg-[#476a30]/10 hover:bg-[#476a30]/20 px-2 py-1 rounded text-xs font-medium cursor-pointer transition-colors"
+                          className="flex items-center gap-1 text-[#476a30] dark:text-[#476a30] bg-[#476a30]/10 dark:bg-[#476a30]/20 hover:bg-[#476a30]/20 dark:hover:bg-[#476a30]/30 px-2 py-1 rounded text-xs font-medium cursor-pointer transition-colors"
                           title={t('clickToRevert')}
                         >
                           <Check className="w-3 h-3" />

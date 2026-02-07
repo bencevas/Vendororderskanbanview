@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { ChevronLeft, ChevronRight, Calendar, LayoutGrid, List, User, Settings, LogOut, Bell, HelpCircle, ChevronDown, Loader2, AlertCircle, LogIn, RefreshCw } from 'lucide-react';
-import { format, addDays, startOfDay, isSameDay } from 'date-fns';
+import { ChevronLeft, ChevronRight, Calendar, LayoutGrid, List, User, Settings, LogOut, Bell, HelpCircle, ChevronDown, Loader2, AlertCircle, LogIn, RefreshCw, Plus } from 'lucide-react';
+import { format, addDays, startOfDay, isSameDay, getDay } from 'date-fns';
 import { OrderCard, Order } from '@/app/components/order-card';
 import { OrderDetailsModal } from '@/app/components/order-details-modal';
 import { BatchView } from '@/app/components/batch-view';
@@ -8,7 +8,9 @@ import { fetchOrders } from '@/app/services/api';
 import { generateMockOrders } from '@/app/mock-data';
 import { AuthProvider, useAuth } from '@/app/contexts/AuthContext';
 import { LocaleProvider, useLocale } from '@/app/contexts/LocaleContext';
+import { ThemeProvider } from '@/app/contexts/ThemeContext';
 import { LoginForm } from '@/app/components/auth/LoginForm';
+import { AuthScreen } from '@/app/components/auth/AuthScreen';
 import { useRealtimeOrders } from '@/app/hooks/useRealtimeOrders';
 import { TestPayloadGenerator } from '@/app/components/test-generator/TestPayloadGenerator';
 import { SettingsModal } from '@/app/components/settings/SettingsModal';
@@ -16,7 +18,7 @@ import { SettingsModal } from '@/app/components/settings/SettingsModal';
 // Main content component that uses auth context
 function AppContent() {
   const { user, isLoading: authLoading, isConfigured, signOut } = useAuth();
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
   const [startDate, setStartDate] = useState(startOfDay(new Date()));
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -169,39 +171,73 @@ function AppContent() {
     : t('notSignedIn');
   const displayEmail = user?.email || '';
   
+  // Helper function to get day name in current locale
+  const getDayName = (date: Date) => {
+    const dayOfWeek = getDay(date); // 0 = Sunday, 1 = Monday, etc.
+    const dayNames = [
+      t('sunday'),
+      t('monday'),
+      t('tuesday'),
+      t('wednesday'),
+      t('thursday'),
+      t('friday'),
+      t('saturday'),
+    ];
+    return dayNames[dayOfWeek];
+  };
+  
+  // Helper function to format date based on locale
+  const formatDate = (date: Date, formatType: 'short' | 'full' = 'full') => {
+    if (locale === 'hu') {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}/${month}/${day}`;
+    } else {
+      return formatType === 'short'
+        ? format(date, 'MMM d')
+        : format(date, 'MMM d, yyyy');
+    }
+  };
+  
+  // Show auth screen if user is not logged in
+  if (!user && !authLoading) {
+    return <AuthScreen />;
+  }
+  
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200">
+      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
         <div className="max-w-[1600px] mx-auto px-4 min-[481px]:px-6 py-4 min-[481px]:py-4">
           
           {/* Row 1: Title + Actions (mobile) / Title only (desktop) */}
           <div className="flex items-center justify-between mb-3 min-[481px]:mb-4">
-            <h1 className="text-lg min-[481px]:text-2xl font-semibold text-gray-900">{t('orderManagement')}</h1>
+            <h1 className="text-lg min-[481px]:text-2xl font-semibold text-gray-900 dark:text-gray-100">{t('orderManagement')}</h1>
             
             {/* Mobile: Action buttons in row 1 */}
             <div className="flex items-center gap-2 min-[481px]:hidden">
               {/* Test Generator Button - compact on mobile */}
               <button
                 onClick={() => setShowTestGenerator(true)}
-                className="px-2 py-1 text-xs font-medium text-[#476a30] bg-[#476a30]/10 hover:bg-[#476a30]/20 rounded-lg transition-colors cursor-pointer"
+                className="p-1.5 text-[#476a30] dark:text-[#EA776C] bg-[#476a30]/10 dark:bg-[#EA776C]/10 hover:bg-[#476a30]/20 dark:hover:bg-[#EA776C]/20 rounded-lg transition-colors cursor-pointer"
                 title={t('testOrder')}
               >
-                {t('test')}
+                <Plus className="w-4 h-4" />
               </button>
 
               {/* Refresh Button */}
               <button
                 onClick={refreshOrders}
-                className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
+                className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer"
                 title={t('refreshOrders')}
               >
-                <RefreshCw className="w-4 h-4 text-gray-600" />
+                <RefreshCw className="w-4 h-4 text-gray-600 dark:text-gray-400" />
               </button>
 
               {/* Notifications */}
-              <button className="relative p-1.5 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer">
-                <Bell className="w-4 h-4 text-gray-700" />
+              <button className="relative p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer">
+                <Bell className="w-4 h-4 text-gray-700 dark:text-gray-300" />
                 <span className="absolute top-0.5 right-0.5 w-1.5 h-1.5 bg-[#EA776C] rounded-full"></span>
               </button>
               
@@ -209,18 +245,18 @@ function AppContent() {
               <div className="relative">
                 <button
                   onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
-                  className="flex items-center gap-1 hover:bg-gray-50 rounded-lg p-1 transition-colors cursor-pointer"
+                  className="flex items-center gap-1 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg p-1 transition-colors cursor-pointer"
                 >
                   {user ? (
                     <div className="w-7 h-7 rounded-full bg-[#476a30] flex items-center justify-center text-white text-xs font-medium">
                       {displayName.charAt(0).toUpperCase()}
                     </div>
                   ) : (
-                    <div className="w-7 h-7 rounded-full bg-gray-200 flex items-center justify-center">
-                      <User className="w-4 h-4 text-gray-500" />
+                    <div className="w-7 h-7 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center">
+                      <User className="w-4 h-4 text-gray-500 dark:text-gray-400" />
                     </div>
                   )}
-                  <ChevronDown className={`w-3 h-3 text-gray-600 transition-transform ${isProfileDropdownOpen ? 'rotate-180' : ''}`} />
+                  <ChevronDown className={`w-3 h-3 text-gray-600 dark:text-gray-400 transition-transform ${isProfileDropdownOpen ? 'rotate-180' : ''}`} />
                 </button>
               </div>
             </div>
@@ -228,13 +264,13 @@ function AppContent() {
           
           {/* Row 2: View Toggle (mobile full width) */}
           <div className="mb-3 min-[481px]:hidden">
-            <div className="flex items-center bg-gray-100 rounded-lg p-1">
+            <div className="flex items-center bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
               <button
                 onClick={() => setViewMode('kanban')}
                 className={`flex-1 flex items-center justify-center gap-2 px-3 py-1.5 rounded text-sm font-medium transition-colors cursor-pointer ${
                   viewMode === 'kanban'
-                    ? 'bg-white text-gray-900 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900'
+                    ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 shadow-sm'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
                 }`}
               >
                 <LayoutGrid className="w-4 h-4" />
@@ -244,8 +280,8 @@ function AppContent() {
                 onClick={() => setViewMode('batch')}
                 className={`flex-1 flex items-center justify-center gap-2 px-3 py-1.5 rounded text-sm font-medium transition-colors cursor-pointer ${
                   viewMode === 'batch'
-                    ? 'bg-white text-gray-900 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900'
+                    ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 shadow-sm'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
                 }`}
               >
                 <List className="w-4 h-4" />
@@ -258,45 +294,45 @@ function AppContent() {
           <div className="flex items-center justify-between gap-2 min-[481px]:hidden">
             <button
               onClick={handlePrevious}
-              className="p-1.5 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 transition-colors cursor-pointer"
+              className="p-1.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors cursor-pointer"
               aria-label="Previous day"
             >
-              <ChevronLeft className="w-4 h-4 text-gray-700" />
+              <ChevronLeft className="w-4 h-4 text-gray-700 dark:text-gray-300" />
             </button>
             
-            <div className="flex-1 flex items-center justify-center gap-1.5 bg-gray-50 rounded-lg px-2 py-1.5 border border-gray-200">
-              <Calendar className="w-4 h-4 text-gray-600" />
+            <div className="flex-1 flex items-center justify-center gap-2 bg-gray-50 dark:bg-gray-700 rounded-lg px-3 py-1.5 border border-gray-200 dark:border-gray-600">
+              <Calendar className="w-4 h-4 text-gray-600 dark:text-gray-400" />
               <input
                 type="date"
                 value={format(startDate, 'yyyy-MM-dd')}
                 onChange={handleDateChange}
-                className="bg-transparent border-none outline-none text-gray-900 cursor-pointer text-sm w-[110px]"
+                className="bg-transparent border-none outline-none text-gray-900 dark:text-gray-100 cursor-pointer text-sm w-[120px]"
               />
             </div>
             
             <button
               onClick={handleNext}
-              className="p-1.5 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 transition-colors cursor-pointer"
+              className="p-1.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors cursor-pointer"
               aria-label="Next day"
             >
-              <ChevronRight className="w-4 h-4 text-gray-700" />
+              <ChevronRight className="w-4 h-4 text-gray-700 dark:text-gray-300" />
             </button>
           </div>
           
-          <div className="text-xs text-gray-600 text-center mt-2 min-[481px]:hidden">
-            {format(days[0], 'MMM d')} - {format(days[4], 'MMM d, yyyy')}
+          <div className="text-xs text-gray-600 dark:text-gray-400 text-center mt-2 min-[481px]:hidden">
+            {formatDate(days[0], 'short')} - {formatDate(days[4], 'full')}
           </div>
           
           {/* Desktop Navigation Controls - hidden on mobile */}
           <div className="hidden min-[481px]:flex items-center gap-4">
             {/* View Toggle */}
-            <div className="flex items-center bg-gray-100 rounded-lg p-1">
+            <div className="flex items-center bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
               <button
                 onClick={() => setViewMode('kanban')}
                 className={`flex items-center gap-2 px-3 py-1.5 rounded text-sm font-medium transition-colors cursor-pointer ${
                   viewMode === 'kanban'
-                    ? 'bg-white text-gray-900 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900'
+                    ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 shadow-sm'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
                 }`}
               >
                 <LayoutGrid className="w-4 h-4" />
@@ -306,8 +342,8 @@ function AppContent() {
                 onClick={() => setViewMode('batch')}
                 className={`flex items-center gap-2 px-3 py-1.5 rounded text-sm font-medium transition-colors cursor-pointer ${
                   viewMode === 'batch'
-                    ? 'bg-white text-gray-900 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900'
+                    ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 shadow-sm'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
                 }`}
               >
                 <List className="w-4 h-4" />
@@ -315,36 +351,36 @@ function AppContent() {
               </button>
             </div>
 
-            <div className="w-px h-8 bg-gray-300" />
+            <div className="w-px h-8 bg-gray-300 dark:bg-gray-600" />
             
             <button
               onClick={handlePrevious}
-              className="p-2 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 transition-colors cursor-pointer"
+              className="p-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors cursor-pointer"
               aria-label="Previous day"
             >
-              <ChevronLeft className="w-5 h-5 text-gray-700" />
+              <ChevronLeft className="w-5 h-5 text-gray-700 dark:text-gray-300" />
             </button>
             
-            <div className="flex items-center gap-2 bg-gray-50 rounded-lg px-4 py-2 border border-gray-200">
-              <Calendar className="w-5 h-5 text-gray-600" />
+            <div className="flex items-center gap-3 bg-gray-50 dark:bg-gray-700 rounded-lg px-6 py-2 border border-gray-200 dark:border-gray-600">
+              <Calendar className="w-5 h-5 text-gray-600 dark:text-gray-400" />
               <input
                 type="date"
                 value={format(startDate, 'yyyy-MM-dd')}
                 onChange={handleDateChange}
-                className="bg-transparent border-none outline-none text-gray-900 cursor-pointer"
+                className="bg-transparent border-none outline-none text-gray-900 dark:text-gray-100 cursor-pointer min-w-[140px]"
               />
             </div>
             
             <button
               onClick={handleNext}
-              className="p-2 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 transition-colors cursor-pointer"
+              className="p-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors cursor-pointer"
               aria-label="Next day"
             >
-              <ChevronRight className="w-5 h-5 text-gray-700" />
+              <ChevronRight className="w-5 h-5 text-gray-700 dark:text-gray-300" />
             </button>
             
-            <div className="ml-auto text-sm text-gray-600">
-              {t('showing')} {format(days[0], 'MMM d')} - {format(days[4], 'MMM d, yyyy')}
+            <div className="ml-auto text-sm text-gray-600 dark:text-gray-400">
+              {t('showing')} {formatDate(days[0], 'short')} - {formatDate(days[4], 'full')}
             </div>
             
             {/* User Profile Section */}
@@ -352,49 +388,49 @@ function AppContent() {
               {/* Test Generator Button */}
               <button
                 onClick={() => setShowTestGenerator(true)}
-                className="px-3 py-1.5 text-sm font-medium text-[#476a30] bg-[#476a30]/10 hover:bg-[#476a30]/20 rounded-lg transition-colors cursor-pointer"
+                className="p-2 text-[#476a30] dark:text-[#EA776C] bg-[#476a30]/10 dark:bg-[#EA776C]/10 hover:bg-[#476a30]/20 dark:hover:bg-[#EA776C]/20 rounded-lg transition-colors cursor-pointer"
                 title={t('testOrder')}
               >
-                {t('testOrder')}
+                <Plus className="w-5 h-5" />
               </button>
 
               {/* Refresh Button */}
               <button
                 onClick={refreshOrders}
-                className="p-2 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
+                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer"
                 title={t('refreshOrders')}
               >
-                <RefreshCw className="w-5 h-5 text-gray-600" />
+                <RefreshCw className="w-5 h-5 text-gray-600 dark:text-gray-400" />
               </button>
 
               {/* Notifications */}
-              <button className="relative p-2 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer">
-                <Bell className="w-5 h-5 text-gray-700" />
+              <button className="relative p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer">
+                <Bell className="w-5 h-5 text-gray-700 dark:text-gray-300" />
                 <span className="absolute top-1 right-1 w-2 h-2 bg-[#EA776C] rounded-full"></span>
               </button>
               
-              <div className="w-px h-8 bg-gray-300" />
+              <div className="w-px h-8 bg-gray-300 dark:bg-gray-600" />
               
               {/* Profile Dropdown */}
               <div className="relative">
                 <button
                   onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
-                  className="flex items-center gap-3 hover:bg-gray-50 rounded-lg p-2 transition-colors cursor-pointer"
+                  className="flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-[#EA776C]/10 rounded-lg p-2 transition-colors cursor-pointer min-w-[140px]"
                 >
-                  <div className="text-right">
-                    <p className="text-sm font-medium text-gray-900">{displayName}</p>
-                    <p className="text-xs text-gray-600">{displayRole}</p>
+                  <div className="text-right flex-shrink-0">
+                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100 whitespace-nowrap">{displayName}</p>
+                    <p className="text-xs text-gray-600 dark:text-gray-400 whitespace-nowrap">{displayRole}</p>
                   </div>
                   {user ? (
                     <div className="w-10 h-10 rounded-full bg-[#476a30] flex items-center justify-center text-white font-medium">
                       {displayName.charAt(0).toUpperCase()}
                     </div>
                   ) : (
-                    <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
-                      <User className="w-5 h-5 text-gray-500" />
+                    <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center">
+                      <User className="w-5 h-5 text-gray-500 dark:text-gray-400" />
                     </div>
                   )}
-                  <ChevronDown className={`w-4 h-4 text-gray-600 transition-transform ${isProfileDropdownOpen ? 'rotate-180' : ''}`} />
+                  <ChevronDown className={`w-4 h-4 text-gray-600 dark:text-gray-400 transition-transform ${isProfileDropdownOpen ? 'rotate-180' : ''}`} />
                 </button>
               </div>
             </div>
@@ -408,18 +444,18 @@ function AppContent() {
                 onClick={() => setIsProfileDropdownOpen(false)}
               />
               
-              <div className="absolute right-3 min-[481px]:right-6 top-12 min-[481px]:top-auto mt-2 bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-[220px] z-20">
+              <div className="absolute right-3 min-[481px]:right-6 top-12 min-[481px]:top-auto mt-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg py-1 min-w-[220px] z-20">
                 {user ? (
                   <>
-                    <div className="px-4 py-3 border-b border-gray-100">
-                      <p className="font-medium text-gray-900">{displayName}</p>
-                      <p className="text-sm text-gray-600">{displayEmail}</p>
-                      <p className="text-xs text-[#476a30] mt-1">{displayRole}</p>
+                    <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700">
+                      <p className="font-medium text-gray-900 dark:text-gray-100">{displayName}</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">{displayEmail}</p>
+                      <p className="text-xs text-[#476a30] dark:text-[#5a8a3f] mt-1">{displayRole}</p>
                     </div>
                     
                     <div className="py-1">
-                      <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-3 cursor-pointer">
-                        <User className="w-4 h-4 text-gray-500" />
+                      <button className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#EA776C]/10 transition-colors flex items-center gap-3 cursor-pointer">
+                        <User className="w-4 h-4 text-gray-500 dark:text-gray-400" />
                         <span>{t('myProfile')}</span>
                       </button>
                       <button 
@@ -427,21 +463,21 @@ function AppContent() {
                           setShowSettingsModal(true);
                           setIsProfileDropdownOpen(false);
                         }}
-                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-3 cursor-pointer"
+                        className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#EA776C]/10 transition-colors flex items-center gap-3 cursor-pointer"
                       >
-                        <Settings className="w-4 h-4 text-gray-500" />
+                        <Settings className="w-4 h-4 text-gray-500 dark:text-gray-400" />
                         <span>{t('settings')}</span>
                       </button>
-                      <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-3 cursor-pointer">
-                        <HelpCircle className="w-4 h-4 text-gray-500" />
+                      <button className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#EA776C]/10 transition-colors flex items-center gap-3 cursor-pointer">
+                        <HelpCircle className="w-4 h-4 text-gray-500 dark:text-gray-400" />
                         <span>{t('helpSupport')}</span>
                       </button>
                     </div>
                     
-                    <div className="border-t border-gray-100 mt-1 pt-1">
+                    <div className="border-t border-gray-100 dark:border-gray-700 mt-1 pt-1">
                       <button 
                         onClick={handleSignOut}
-                        className="w-full text-left px-4 py-2 text-sm text-[#EA776C] hover:bg-[#EA776C]/10 transition-colors flex items-center gap-3 cursor-pointer"
+                        className="w-full text-left px-4 py-2 text-sm text-[#EA776C] hover:bg-[#EA776C]/10 dark:hover:bg-[#EA776C]/20 transition-colors flex items-center gap-3 cursor-pointer"
                       >
                         <LogOut className="w-4 h-4" />
                         <span>{t('signOut')}</span>
@@ -450,9 +486,9 @@ function AppContent() {
                   </>
                 ) : (
                   <>
-                    <div className="px-4 py-3 border-b border-gray-100">
-                      <p className="font-medium text-gray-900">{t('welcome')}</p>
-                      <p className="text-sm text-gray-600">{t('signInToManage')}</p>
+                    <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700">
+                      <p className="font-medium text-gray-900 dark:text-gray-100">{t('welcome')}</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">{t('signInToManage')}</p>
                     </div>
                     
                     {isConfigured ? (
@@ -462,14 +498,14 @@ function AppContent() {
                             setShowLoginModal(true);
                             setIsProfileDropdownOpen(false);
                           }}
-                          className="w-full text-left px-4 py-2 text-sm text-[#476a30] hover:bg-[#476a30]/10 transition-colors flex items-center gap-3 cursor-pointer"
+                          className="w-full text-left px-4 py-2 text-sm text-[#476a30] dark:text-[#EA776C] hover:bg-[#476a30]/10 dark:hover:bg-[#EA776C]/10 transition-colors flex items-center gap-3 cursor-pointer"
                         >
                           <LogIn className="w-4 h-4" />
                           <span>{t('signIn')}</span>
                         </button>
                       </div>
                     ) : (
-                      <div className="px-4 py-3 text-sm text-gray-500">
+                      <div className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
                         <p>{t('authNotConfigured')}</p>
                         <p className="text-xs mt-1">{t('setupSupabase')}</p>
                       </div>
@@ -486,8 +522,8 @@ function AppContent() {
       {isLoading || authLoading ? (
         <div className="max-w-[1600px] mx-auto px-3 min-[481px]:px-6 py-8 min-[481px]:py-12 flex items-center justify-center">
           <div className="flex flex-col items-center gap-4">
-            <Loader2 className="w-8 h-8 text-gray-400 animate-spin" />
-            <p className="text-gray-600">{t('loadingOrders')}</p>
+            <Loader2 className="w-8 h-8 text-gray-400 dark:text-gray-500 animate-spin" />
+            <p className="text-gray-600 dark:text-gray-400">{t('loadingOrders')}</p>
           </div>
         </div>
       ) : error ? (
@@ -495,8 +531,8 @@ function AppContent() {
           <div className="flex flex-col items-center gap-4 max-w-md text-center">
             <AlertCircle className="w-12 h-12 text-[#EA776C]" />
             <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">{t('errorLoadingOrders')}</h3>
-              <p className="text-gray-600 mb-4">{error}</p>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">{t('errorLoadingOrders')}</h3>
+              <p className="text-gray-600 dark:text-gray-400 mb-4">{error}</p>
               <button
                 onClick={() => {
                   const endDate = addDays(startDate, 4);
@@ -520,17 +556,17 @@ function AppContent() {
               return (
                 <div
                   key={`${day.toISOString()}-${refreshKey}`}
-                  className="flex-shrink-0 w-64 min-[481px]:w-80 bg-gray-100 rounded-lg p-3 min-[481px]:p-4"
+                  className="flex-shrink-0 w-64 min-[481px]:w-80 bg-gray-100 dark:bg-gray-800 rounded-lg p-3 min-[481px]:p-4"
                 >
                   <div className="mb-4">
                     <div className="flex items-center justify-between">
                       <div>
-                        <h2 className="font-semibold text-gray-900">
-                          {index === 0 && isToday(day) ? t('today') : format(day, 'EEEE')}
+                        <h2 className="font-semibold text-gray-900 dark:text-gray-100">
+                          {index === 0 && isToday(day) ? t('today') : getDayName(day)}
                         </h2>
-                        <p className="text-sm text-gray-600">{format(day, 'MMM d, yyyy')}</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">{formatDate(day, 'full')}</p>
                       </div>
-                      <div className="bg-white rounded-full px-3 py-1 text-sm font-medium text-gray-700">
+                      <div className="bg-white dark:bg-gray-700 rounded-full px-3 py-1 text-sm font-medium text-gray-700 dark:text-gray-300">
                         {dayOrders.length}
                       </div>
                     </div>
@@ -549,7 +585,7 @@ function AppContent() {
                         />
                       ))
                     ) : (
-                      <div className="text-center py-8 text-gray-500 text-sm">
+                      <div className="text-center py-8 text-gray-500 dark:text-gray-400 text-sm">
                         {t('noOrdersScheduled')}
                       </div>
                     )}
@@ -583,13 +619,13 @@ function AppContent() {
 
       {/* Login Modal */}
       {showLoginModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black/50 dark:bg-black/70 z-50 flex items-center justify-center p-4">
           <div className="relative">
             <button
               onClick={() => setShowLoginModal(false)}
-              className="absolute -top-2 -right-2 w-8 h-8 bg-white rounded-full shadow-lg flex items-center justify-center hover:bg-gray-100 cursor-pointer z-10"
+              className="absolute -top-2 -right-2 w-8 h-8 bg-white dark:bg-gray-800 rounded-full shadow-lg flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer z-10"
             >
-              <span className="text-gray-500 text-xl leading-none">&times;</span>
+              <span className="text-gray-500 dark:text-gray-400 text-xl leading-none">&times;</span>
             </button>
             <LoginForm onSuccess={() => setShowLoginModal(false)} />
           </div>
@@ -598,7 +634,7 @@ function AppContent() {
 
       {/* Test Generator Modal */}
       {showTestGenerator && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black/50 dark:bg-black/70 z-50 flex items-center justify-center p-4">
           <TestPayloadGenerator 
             onClose={() => setShowTestGenerator(false)} 
             onOrderCreated={() => {
@@ -621,10 +657,12 @@ function AppContent() {
 // Main App component with providers
 export default function App() {
   return (
-    <AuthProvider>
-      <LocaleProvider>
-        <AppContent />
-      </LocaleProvider>
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <LocaleProvider>
+          <AppContent />
+        </LocaleProvider>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }

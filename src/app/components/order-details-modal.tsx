@@ -12,10 +12,10 @@ interface OrderDetailsModalProps {
 }
 
 const statusColors = {
-  pending: 'bg-red-50 text-red-700 border-red-300',
-  confirmed: 'bg-orange-50 text-orange-700 border-orange-300',
-  processing: 'bg-yellow-50 text-yellow-700 border-yellow-300',
-  ready: 'bg-green-50 text-green-700 border-green-300',
+  pending: 'bg-white dark:bg-gray-800 text-red-600 dark:text-red-400 border-red-400 dark:border-red-500/50',
+  confirmed: 'bg-white dark:bg-gray-800 text-orange-600 dark:text-orange-400 border-orange-400 dark:border-orange-500/50',
+  processing: 'bg-white dark:bg-gray-800 text-yellow-600 dark:text-yellow-400 border-yellow-400 dark:border-yellow-500/50',
+  ready: 'bg-white dark:bg-gray-800 text-green-600 dark:text-green-400 border-green-400 dark:border-green-500/50',
 };
 
 const statuses: Order['status'][] = ['pending', 'confirmed', 'processing', 'ready'];
@@ -179,12 +179,12 @@ export function OrderDetailsModal({ order, onClose, onOrderUpdate }: OrderDetail
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end min-[481px]:items-center justify-center z-50 min-[481px]:p-4">
-      <div className="bg-white rounded-t-xl min-[481px]:rounded-lg shadow-xl w-full min-[481px]:max-w-3xl h-[95vh] min-[481px]:h-auto min-[481px]:max-h-[90vh] overflow-hidden flex flex-col">
+    <div className="fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-70 flex items-end min-[481px]:items-center justify-center z-50 min-[481px]:p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-t-xl min-[481px]:rounded-lg shadow-xl w-full min-[481px]:max-w-3xl h-[95vh] min-[481px]:h-auto min-[481px]:max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="bg-gray-50 border-b border-gray-200 px-4 min-[481px]:px-6 py-3 min-[481px]:py-4 flex items-center justify-between">
+        <div className="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600 px-4 min-[481px]:px-6 py-3 min-[481px]:py-4 flex items-center justify-between">
           <div className="flex items-center gap-2 min-[481px]:gap-4 flex-wrap">
-            <h2 className="text-base min-[481px]:text-xl font-semibold text-gray-900">{order.orderCode}</h2>
+            <h2 className="text-base min-[481px]:text-xl font-semibold text-gray-900 dark:text-gray-100">{order.orderCode}</h2>
             
             {/* Status Dropdown */}
             <div className="relative">
@@ -205,13 +205,13 @@ export function OrderDetailsModal({ order, onClose, onOrderUpdate }: OrderDetail
                   />
                   
                   {/* Dropdown Menu */}
-                  <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-[150px] z-20">
+                  <div className="absolute top-full left-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg py-1 min-w-[150px] z-20">
                     {statuses.map((status) => (
                       <button
                         key={status}
                         onClick={() => handleStatusChange(status)}
-                        className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 transition-colors ${
-                          status === currentStatus ? 'bg-gray-100 font-medium' : ''
+                        className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${
+                          status === currentStatus ? 'bg-gray-100 dark:bg-gray-700 font-medium' : ''
                         }`}
                       >
                         <span className={`inline-block px-2 py-1 rounded-full text-xs ${statusColors[status]}`}>
@@ -235,15 +235,15 @@ export function OrderDetailsModal({ order, onClose, onOrderUpdate }: OrderDetail
         </div>
 
         {/* Customer Info */}
-        <div className="px-4 min-[481px]:px-6 py-3 min-[481px]:py-4 bg-gray-50 border-b border-gray-200">
+        <div className="px-4 min-[481px]:px-6 py-3 min-[481px]:py-4 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs min-[481px]:text-sm text-gray-600">{t('customer')}</p>
-              <p className="font-medium text-gray-900 text-sm min-[481px]:text-base">{order.customerName}</p>
+              <p className="text-xs min-[481px]:text-sm text-gray-600 dark:text-gray-400">{t('customer')}</p>
+              <p className="font-medium text-gray-900 dark:text-gray-100 text-sm min-[481px]:text-base">{order.customerName}</p>
             </div>
             <div className="text-right">
-              <p className="text-xs min-[481px]:text-sm text-gray-600">{t('deliveryDate')}</p>
-              <p className="font-medium text-gray-900 text-sm min-[481px]:text-base">
+              <p className="text-xs min-[481px]:text-sm text-gray-600 dark:text-gray-400">{t('deliveryDate')}</p>
+              <p className="font-medium text-gray-900 dark:text-gray-100 text-sm min-[481px]:text-base">
                 {order.deliveryDate.toLocaleDateString('en-US', { 
                   month: 'short', 
                   day: 'numeric', 
@@ -279,10 +279,10 @@ export function OrderDetailsModal({ order, onClose, onOrderUpdate }: OrderDetail
               {items.map((item) => (
               <div
                 key={item.id}
-                className={`bg-white border rounded-lg p-3 min-[481px]:p-4 transition-all ${
-                  item.confirmed === false ? 'opacity-60 border-[#EA776C]/30 bg-[#EA776C]/10' : 
-                  item.confirmed === true ? 'border-[#476a30]/30 bg-[#476a30]/10' : 
-                  'border-gray-200 hover:border-gray-300'
+                className={`bg-white dark:bg-gray-800 border rounded-lg p-3 min-[481px]:p-4 transition-all ${
+                  item.confirmed === false ? 'opacity-60 border-[#EA776C]/30 dark:border-[#EA776C]/40 bg-[#EA776C]/10 dark:bg-[#EA776C]/20' : 
+                  item.confirmed === true ? 'border-[#476a30]/30 dark:border-[#476a30]/40 bg-[#476a30]/10 dark:bg-[#476a30]/20' : 
+                  'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
                 }`}
               >
                 {/* Mobile Layout */}
@@ -292,27 +292,29 @@ export function OrderDetailsModal({ order, onClose, onOrderUpdate }: OrderDetail
                     <img
                       src={item.image}
                       alt={item.name}
-                      className="w-14 h-14 object-cover rounded-lg bg-gray-100 flex-shrink-0"
+                      className="w-14 h-14 object-cover rounded-lg bg-gray-100 dark:bg-gray-700 flex-shrink-0"
                     />
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-medium text-gray-900 text-sm truncate">{item.name}</h3>
-                      <p className="text-xs text-gray-500 mt-0.5">@${item.price.toFixed(2)} / {item.unit}</p>
-                      <p className="text-sm font-semibold text-gray-900 mt-1">${(item.actualQuantity * item.price).toFixed(2)}</p>
+                    <div className="flex-1 min-w-0 flex items-start justify-between">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-medium text-gray-900 dark:text-gray-100 text-sm truncate">{item.name}</h3>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">@${item.price.toFixed(2)} / {item.unit}</p>
+                      </div>
+                      <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 ml-4 flex-shrink-0">${(item.actualQuantity * item.price).toFixed(2)}</p>
                     </div>
                   </div>
                   
                   {/* Row 2: Quantity Adjuster + Action Buttons in one line */}
                   <div className="flex items-center gap-2">
                     {/* Quantity Adjuster */}
-                    <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden flex-shrink-0">
+                    <div className="flex items-center border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden flex-shrink-0">
                       <button
                         onClick={() => decrementQuantity(item.id)}
                         disabled={item.confirmed !== null}
-                        className={`px-2 py-2 bg-gray-100 hover:bg-gray-200 border-r transition-colors ${
+                        className={`px-2 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 border-r dark:border-gray-600 transition-colors rounded-l-lg ${
                           item.confirmed !== null ? 'opacity-50 cursor-not-allowed' : ''
                         }`}
                       >
-                        <Minus className="w-4 h-4 text-gray-700" />
+                        <Minus className="w-4 h-4 text-gray-700 dark:text-gray-300" />
                       </button>
                       <input
                         type="number"
@@ -320,28 +322,28 @@ export function OrderDetailsModal({ order, onClose, onOrderUpdate }: OrderDetail
                         value={item.actualQuantity}
                         onChange={(e) => handleQuantityChange(item.id, e.target.value)}
                         disabled={item.confirmed !== null}
-                        className={`w-14 px-1 py-2 text-center text-sm font-medium border-0 focus:outline-none ${
+                        className={`w-16 px-2 py-2 text-center text-sm font-medium border-0 focus:outline-none rounded-none ${
                           item.confirmed !== null 
-                            ? 'bg-gray-100 cursor-not-allowed text-gray-600' 
-                            : 'bg-white'
-                        } ${hasQuantityDifference(item) ? 'bg-[#EA776C]/10' : ''}`}
+                            ? 'bg-gray-100 dark:bg-gray-700 cursor-not-allowed text-gray-600 dark:text-gray-400' 
+                            : 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100'
+                        } ${hasQuantityDifference(item) ? 'bg-[#EA776C]/10 dark:bg-[#EA776C]/20' : ''}`}
                       />
                       <button
                         onClick={() => incrementQuantity(item.id)}
                         disabled={item.confirmed !== null}
-                        className={`px-2 py-2 bg-gray-100 hover:bg-gray-200 border-l transition-colors ${
+                        className={`px-2 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 border-l dark:border-gray-600 transition-colors rounded-r-lg ${
                           item.confirmed !== null ? 'opacity-50 cursor-not-allowed' : ''
                         }`}
                       >
-                        <Plus className="w-4 h-4 text-gray-700" />
+                        <Plus className="w-4 h-4 text-gray-700 dark:text-gray-300" />
                       </button>
                     </div>
                     
                     {/* Unit + difference */}
-                    <div className="flex flex-col text-xs text-gray-600 min-w-0">
+                    <div className="flex flex-col text-xs text-gray-600 dark:text-gray-400 min-w-0">
                       <span>{item.unit}</span>
                       {hasQuantityDifference(item) && (
-                        <span className="text-[#EA776C]">(was {item.orderedQuantity})</span>
+                        <span className="text-[#EA776C] whitespace-nowrap">{t('was')} {item.orderedQuantity} ({item.unit})</span>
                       )}
                     </div>
                     
@@ -365,14 +367,14 @@ export function OrderDetailsModal({ order, onClose, onOrderUpdate }: OrderDetail
                           </button>
                         </>
                       ) : item.confirmed ? (
-                        <button
-                          onClick={() => handleRevertConfirmation(item.id)}
-                          className="h-9 px-3 flex items-center justify-center gap-1 text-[#476a30] bg-[#476a30]/10 hover:bg-[#476a30]/20 rounded-lg text-xs font-medium transition-colors cursor-pointer"
-                          title={t('clickToRevert')}
-                        >
-                          <Check className="w-3 h-3" />
-                          <span>{t('ok')}</span>
-                        </button>
+                          <button
+                            onClick={() => handleRevertConfirmation(item.id)}
+                            className="h-9 px-3 flex items-center justify-center gap-1 text-[#476a30] dark:text-[#476a30] bg-[#476a30]/10 dark:bg-[#476a30]/20 hover:bg-[#476a30]/20 dark:hover:bg-[#476a30]/30 rounded-lg text-xs font-medium transition-colors cursor-pointer"
+                            title={t('clickToRevert')}
+                          >
+                            <Check className="w-3 h-3" />
+                            <span>{t('ok')}</span>
+                          </button>
                       ) : (
                         <button
                           onClick={() => handleRevertConfirmation(item.id)}
@@ -394,7 +396,7 @@ export function OrderDetailsModal({ order, onClose, onOrderUpdate }: OrderDetail
                     <img
                       src={item.image}
                       alt={item.name}
-                      className="w-20 h-20 object-cover rounded-lg bg-gray-100"
+                      className="w-20 h-20 object-cover rounded-lg bg-gray-100 dark:bg-gray-700"
                     />
                   </div>
                   
@@ -402,20 +404,20 @@ export function OrderDetailsModal({ order, onClose, onOrderUpdate }: OrderDetail
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex-1">
-                        <h3 className="font-medium text-gray-900 mb-3">{item.name}</h3>
+                        <h3 className="font-medium text-gray-900 dark:text-gray-100 mb-3">{item.name}</h3>
                         
                         {/* Quantity, Price, Total in one line */}
                         <div className="flex items-center gap-6 text-sm">
                           <div className="flex items-center gap-2">
-                            <div className="flex items-center border rounded-lg overflow-hidden">
+                            <div className="flex items-center border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden">
                               <button
                                 onClick={() => decrementQuantity(item.id)}
                                 disabled={item.confirmed !== null}
-                                className={`px-2 py-1.5 bg-gray-100 hover:bg-gray-200 border-r transition-colors ${
+                                className={`px-2 py-1.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 border-r dark:border-gray-600 transition-colors rounded-l-lg ${
                                   item.confirmed !== null ? 'opacity-50 cursor-not-allowed' : ''
                                 }`}
                               >
-                                <Minus className="w-4 h-4 text-gray-700" />
+                                <Minus className="w-4 h-4 text-gray-700 dark:text-gray-300" />
                               </button>
                               <input
                                 type="number"
@@ -423,37 +425,37 @@ export function OrderDetailsModal({ order, onClose, onOrderUpdate }: OrderDetail
                                 value={item.actualQuantity}
                                 onChange={(e) => handleQuantityChange(item.id, e.target.value)}
                                 disabled={item.confirmed !== null}
-                                className={`w-16 px-2 py-1.5 text-center font-medium border-0 focus:outline-none ${
+                                className={`w-16 px-2 py-1.5 text-center font-medium border-0 focus:outline-none rounded-none ${
                                   item.confirmed !== null 
-                                    ? 'bg-gray-100 cursor-not-allowed text-gray-600' 
-                                    : 'bg-white focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20'
-                                } ${hasQuantityDifference(item) ? 'bg-[#EA776C]/10' : ''}`}
+                                    ? 'bg-gray-100 dark:bg-gray-700 cursor-not-allowed text-gray-600 dark:text-gray-400' 
+                                    : 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20'
+                                } ${hasQuantityDifference(item) ? 'bg-[#EA776C]/10 dark:bg-[#EA776C]/20' : ''}`}
                               />
                               <button
                                 onClick={() => incrementQuantity(item.id)}
                                 disabled={item.confirmed !== null}
-                                className={`px-2 py-1.5 bg-gray-100 hover:bg-gray-200 border-l transition-colors ${
+                                className={`px-2 py-1.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 border-l dark:border-gray-600 transition-colors rounded-r-lg ${
                                   item.confirmed !== null ? 'opacity-50 cursor-not-allowed' : ''
                                 }`}
                               >
-                                <Plus className="w-4 h-4 text-gray-700" />
+                                <Plus className="w-4 h-4 text-gray-700 dark:text-gray-300" />
                               </button>
                             </div>
-                            <span className="text-gray-600">{item.unit}</span>
+                            <span className="text-gray-600 dark:text-gray-400">{item.unit}</span>
                             {hasQuantityDifference(item) && (
-                              <span className="text-xs text-[#EA776C]">
-                                (was {item.orderedQuantity})
+                              <span className="text-xs text-[#EA776C] whitespace-nowrap">
+                                {t('was')} {item.orderedQuantity} ({item.unit})
                               </span>
                             )}
                           </div>
                           
-                          <div className="text-gray-700">
-                            <span className="text-gray-500">{t('price')}: </span>
+                          <div className="text-gray-700 dark:text-gray-300">
+                            <span className="text-gray-500 dark:text-gray-400">{t('price')}: </span>
                             <span className="font-medium">${item.price.toFixed(2)}</span>
                           </div>
                           
-                          <div className="text-gray-900">
-                            <span className="text-gray-500">{t('total')}: </span>
+                          <div className="text-gray-900 dark:text-gray-100 ml-auto">
+                            <span className="text-gray-500 dark:text-gray-400">{t('total')}: </span>
                             <span className="font-semibold text-lg">${(item.actualQuantity * item.price).toFixed(2)}</span>
                           </div>
                         </div>
@@ -481,7 +483,7 @@ export function OrderDetailsModal({ order, onClose, onOrderUpdate }: OrderDetail
                         ) : item.confirmed ? (
                           <button
                             onClick={() => handleRevertConfirmation(item.id)}
-                            className="flex items-center gap-2 text-[#476a30] bg-[#476a30]/10 hover:bg-[#476a30]/20 px-3 py-2 rounded-lg transition-colors cursor-pointer"
+                            className="flex items-center gap-2 text-[#476a30] dark:text-[#476a30] bg-[#476a30]/10 dark:bg-[#476a30]/20 hover:bg-[#476a30]/20 dark:hover:bg-[#476a30]/30 px-3 py-2 rounded-lg transition-colors cursor-pointer"
                             title={t('clickToRevert')}
                           >
                             <Check className="w-4 h-4" />
@@ -508,11 +510,11 @@ export function OrderDetailsModal({ order, onClose, onOrderUpdate }: OrderDetail
         </div>
 
         {/* Footer with Total and Buttons - always at bottom */}
-        <div className="bg-gray-50 border-t border-gray-200 px-4 min-[481px]:px-6 py-3 min-[481px]:py-4">
+        <div className="bg-gray-50 dark:bg-gray-700 border-t border-gray-200 dark:border-gray-600 px-4 min-[481px]:px-6 py-3 min-[481px]:py-4">
           {/* Total Section */}
-          <div className="flex justify-between items-center mb-3 min-[481px]:mb-4 pb-3 min-[481px]:pb-4 border-b border-gray-200">
+          <div className="flex justify-between items-center mb-3 min-[481px]:mb-4 pb-3 min-[481px]:pb-4 border-b border-gray-200 dark:border-gray-600">
             <div>
-              <p className="text-xs min-[481px]:text-sm text-gray-600">
+              <p className="text-xs min-[481px]:text-sm text-gray-600 dark:text-gray-400">
                 {items.filter(i => i.confirmed === true).length} {t('of')} {items.length} {t('itemsConfirmed')}
               </p>
               {items.some(i => i.confirmed === false) && (
@@ -522,8 +524,8 @@ export function OrderDetailsModal({ order, onClose, onOrderUpdate }: OrderDetail
               )}
             </div>
             <div className="text-right">
-              <p className="text-xs min-[481px]:text-sm text-gray-600">{t('orderTotal')}</p>
-              <p className="text-xl min-[481px]:text-2xl font-semibold text-gray-900">
+              <p className="text-xs min-[481px]:text-sm text-gray-600 dark:text-gray-400">{t('orderTotal')}</p>
+              <p className="text-xl min-[481px]:text-2xl font-semibold text-gray-900 dark:text-gray-100">
                 ${calculateTotal().toFixed(2)}
               </p>
             </div>
@@ -533,7 +535,7 @@ export function OrderDetailsModal({ order, onClose, onOrderUpdate }: OrderDetail
           <div className="flex gap-2 min-[481px]:gap-3 flex-1 min-[481px]:flex-none min-[481px]:justify-end">
             <button
               onClick={onClose}
-              className="flex-1 min-[481px]:flex-none px-4 py-2.5 min-[481px]:py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm min-[481px]:text-base"
+              className="flex-1 min-[481px]:flex-none px-4 py-2.5 min-[481px]:py-2 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-sm min-[481px]:text-base"
             >
               {t('close')}
             </button>
@@ -576,7 +578,7 @@ export function OrderDetailsModal({ order, onClose, onOrderUpdate }: OrderDetail
                 }
               }}
               disabled={isSaving || isLoading}
-              className="flex-1 min-[481px]:flex-none px-4 py-2.5 min-[481px]:py-2 text-white bg-[#476a30] rounded-lg hover:bg-[#3d5a28] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm min-[481px]:text-base"
+              className="flex-1 min-[481px]:flex-none px-4 py-2.5 min-[481px]:py-2 text-white bg-[#476a30] hover:bg-[#3d5a28] rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm min-[481px]:text-base"
             >
               {isSaving && <Loader2 className="w-4 h-4 animate-spin" />}
               {t('saveChanges')}
