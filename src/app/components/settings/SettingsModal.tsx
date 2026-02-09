@@ -1,4 +1,4 @@
-import { X, Globe, Moon, Sun } from 'lucide-react';
+import { X, Globe, Moon, Sun, Monitor } from 'lucide-react';
 import { useLocale, Locale } from '@/app/contexts/LocaleContext';
 import { useTheme } from '@/app/contexts/ThemeContext';
 
@@ -8,7 +8,7 @@ interface SettingsModalProps {
 
 export function SettingsModal({ onClose }: SettingsModalProps) {
   const { locale, setLocale, t } = useLocale();
-  const { theme, setTheme } = useTheme();
+  const { theme, themePreference, setThemePreference } = useTheme();
 
   const handleLocaleChange = async (newLocale: Locale) => {
     await setLocale(newLocale);
@@ -74,7 +74,9 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-3 flex-1">
               <div className="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-600 flex items-center justify-center">
-                {theme === 'dark' ? (
+                {themePreference === 'auto' ? (
+                  <Monitor className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+                ) : theme === 'dark' ? (
                   <Moon className="w-5 h-5 text-gray-600 dark:text-gray-300" />
                 ) : (
                   <Sun className="w-5 h-5 text-gray-600 dark:text-gray-300" />
@@ -83,7 +85,11 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
               <div>
                 <p className="font-medium text-gray-900 dark:text-gray-100">{t('theme')}</p>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
-                  {theme === 'dark' ? t('dark') : t('light')}
+                  {themePreference === 'auto' 
+                    ? t('auto') 
+                    : themePreference === 'dark' 
+                      ? t('dark') 
+                      : t('light')}
                 </p>
               </div>
             </div>
@@ -91,9 +97,9 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
             {/* Theme Selector */}
             <div className="flex rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden">
               <button
-                onClick={() => setTheme('light')}
-                className={`px-4 py-2 text-sm font-medium transition-colors flex items-center gap-2 ${
-                  theme === 'light'
+                onClick={() => setThemePreference('light')}
+                className={`px-3 py-2 text-sm font-medium transition-colors flex items-center gap-1.5 ${
+                  themePreference === 'light'
                     ? 'bg-[#476a30] text-white'
                     : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'
                 }`}
@@ -102,9 +108,20 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
                 {t('light')}
               </button>
               <button
-                onClick={() => setTheme('dark')}
-                className={`px-4 py-2 text-sm font-medium border-l border-gray-300 dark:border-gray-600 transition-colors flex items-center gap-2 ${
-                  theme === 'dark'
+                onClick={() => setThemePreference('auto')}
+                className={`px-3 py-2 text-sm font-medium border-l border-gray-300 dark:border-gray-600 transition-colors flex items-center gap-1.5 ${
+                  themePreference === 'auto'
+                    ? 'bg-[#476a30] text-white'
+                    : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'
+                }`}
+              >
+                <Monitor className="w-4 h-4" />
+                {t('auto')}
+              </button>
+              <button
+                onClick={() => setThemePreference('dark')}
+                className={`px-3 py-2 text-sm font-medium border-l border-gray-300 dark:border-gray-600 transition-colors flex items-center gap-1.5 ${
+                  themePreference === 'dark'
                     ? 'bg-[#476a30] text-white'
                     : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'
                 }`}

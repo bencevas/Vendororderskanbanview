@@ -133,6 +133,7 @@ export const translations = {
     theme: 'Theme',
     light: 'Light',
     dark: 'Dark',
+    auto: 'Auto',
   },
   
   hu: {
@@ -267,6 +268,7 @@ export const translations = {
     theme: 'Téma',
     light: 'Világos',
     dark: 'Sötét',
+    auto: 'Automatikus',
   },
 } as const;
 
