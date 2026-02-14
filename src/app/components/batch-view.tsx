@@ -409,7 +409,7 @@ export function BatchView({ orders, date, onOrderUpdate }: BatchViewProps) {
               </div>
               <button
                 onClick={() => confirmAllForItem(item.itemName)}
-                className="px-2 py-1 min-[481px]:px-4 min-[481px]:py-2 bg-[#476a30] hover:bg-[#3d5a28] text-white text-xs min-[481px]:text-sm font-medium rounded-lg transition-colors whitespace-nowrap"
+                className="px-3 py-2 min-[481px]:px-4 min-[481px]:py-2 bg-[#476a30] hover:bg-[#3d5a28] active:bg-[#34501f] text-white text-xs min-[481px]:text-sm font-semibold rounded-xl min-[481px]:rounded-lg transition-colors whitespace-nowrap shadow-sm"
               >
                 {t('confirmAll')}
               </button>
@@ -431,29 +431,28 @@ export function BatchView({ orders, date, onOrderUpdate }: BatchViewProps) {
                   {/* Mobile Layout */}
                   <div className="min-[481px]:hidden">
                     {/* Row 1: Order info + Price */}
-                    <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center justify-between mb-2.5">
                       <div>
-                        <p className="font-medium text-gray-900 dark:text-gray-100 text-xs">{instance.orderCode}</p>
+                        <p className="font-semibold text-gray-900 dark:text-gray-100 text-sm">{instance.orderCode}</p>
                         <p className="text-xs text-gray-600 dark:text-gray-400">{instance.customerName}</p>
                       </div>
                       <div className="text-right">
-                        <p className="text-xs text-gray-900 dark:text-gray-100 font-medium">${(instance.actualQuantity * instance.price).toFixed(2)}</p>
+                        <p className="text-sm text-gray-900 dark:text-gray-100 font-semibold">${(instance.actualQuantity * instance.price).toFixed(2)}</p>
                         <p className="text-xs text-gray-500 dark:text-gray-400">@${instance.price.toFixed(2)}</p>
                       </div>
                     </div>
                     
-                    {/* Row 2: Quantity Adjuster + Action Buttons in one line */}
-                    <div className="flex items-center gap-2">
-                      {/* Quantity Adjuster */}
-                      <div className="flex items-center border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden flex-shrink-0">
+                    {/* Row 2: Quantity Adjuster — centered */}
+                    <div className="flex items-center justify-center gap-2 mb-2.5">
+                      <div className="flex items-center border border-gray-300 dark:border-gray-600 rounded-xl overflow-hidden">
                         <button
                           onClick={() => decrementQuantity(item.itemName, instance.id)}
                           disabled={instance.confirmed !== null}
-                          className={`px-2 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 border-r dark:border-gray-600 transition-colors rounded-l-lg ${
+                          className={`px-3.5 py-2.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 active:bg-gray-300 border-r dark:border-gray-600 transition-colors ${
                             instance.confirmed !== null ? 'opacity-50 cursor-not-allowed' : ''
                           }`}
                         >
-                          <Minus className="w-4 h-4 text-gray-700 dark:text-gray-300" />
+                          <Minus className="w-5 h-5 text-gray-700 dark:text-gray-300" />
                         </button>
                         <input
                           type="number"
@@ -461,7 +460,7 @@ export function BatchView({ orders, date, onOrderUpdate }: BatchViewProps) {
                           value={instance.actualQuantity}
                           onChange={(e) => handleQuantityChange(item.itemName, instance.id, e.target.value)}
                           disabled={instance.confirmed !== null}
-                          className={`w-16 px-2 py-2 text-center text-sm font-medium border-0 focus:outline-none rounded-none ${
+                          className={`w-20 px-2 py-2.5 text-center text-base font-semibold border-0 focus:outline-none ${
                             instance.confirmed !== null
                               ? 'bg-gray-100 dark:bg-gray-700 cursor-not-allowed text-gray-600 dark:text-gray-400'
                               : 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100'
@@ -470,62 +469,56 @@ export function BatchView({ orders, date, onOrderUpdate }: BatchViewProps) {
                         <button
                           onClick={() => incrementQuantity(item.itemName, instance.id)}
                           disabled={instance.confirmed !== null}
-                          className={`px-2 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 border-l dark:border-gray-600 transition-colors rounded-r-lg ${
+                          className={`px-3.5 py-2.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 active:bg-gray-300 border-l dark:border-gray-600 transition-colors ${
                             instance.confirmed !== null ? 'opacity-50 cursor-not-allowed' : ''
                           }`}
                         >
-                          <Plus className="w-4 h-4 text-gray-700 dark:text-gray-300" />
+                          <Plus className="w-5 h-5 text-gray-700 dark:text-gray-300" />
                         </button>
                       </div>
-                      
-                      {/* Unit + difference */}
-                      <div className="flex flex-col text-xs text-gray-600 dark:text-gray-400 min-w-0">
-                        <span>{item.unit}</span>
-                        {hasQuantityDifference(instance) && (
-                          <span className="text-[#EA776C] whitespace-nowrap">{t('was')} {instance.orderedQuantity} ({item.unit})</span>
-                        )}
-                      </div>
-                      
-                      {/* Action Buttons */}
-                      <div className="flex gap-1.5 ml-auto flex-shrink-0">
-                        {instance.confirmed === null ? (
-                          <>
-                            <button
-                              onClick={() => handleConfirm(item.itemName, instance.id)}
-                              className="w-9 h-9 flex items-center justify-center bg-[#476a30] hover:bg-[#3d5a28] text-white rounded-lg transition-colors"
-                              title={t('confirm')}
-                            >
-                              <Check className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => handleDeny(item.itemName, instance.id)}
-                              className="w-9 h-9 flex items-center justify-center bg-[#EA776C] hover:bg-[#d4665c] text-white rounded-lg transition-colors"
-                              title={t('deny')}
-                            >
-                              <XIcon className="w-4 h-4" />
-                            </button>
-                          </>
-                        ) : instance.confirmed ? (
-                          <button
-                            onClick={() => handleRevertConfirmation(item.itemName, instance.id)}
-                            className="h-9 px-3 flex items-center justify-center gap-1 text-[#476a30] dark:text-[#476a30] bg-[#476a30]/10 dark:bg-[#476a30]/20 hover:bg-[#476a30]/20 dark:hover:bg-[#476a30]/30 rounded-lg text-xs font-medium transition-colors cursor-pointer"
-                            title={t('clickToRevert')}
-                          >
-                            <Check className="w-3 h-3" />
-                            <span>{t('ok')}</span>
-                          </button>
-                        ) : (
-                          <button
-                            onClick={() => handleRevertConfirmation(item.itemName, instance.id)}
-                            className="h-9 px-3 flex items-center justify-center gap-1 text-[#EA776C] bg-[#EA776C]/10 hover:bg-[#EA776C]/20 rounded-lg text-xs font-medium transition-colors cursor-pointer"
-                            title={t('clickToRevert')}
-                          >
-                            <XIcon className="w-3 h-3" />
-                            <span>{t('no')}</span>
-                          </button>
-                        )}
-                      </div>
+                      <span className="text-sm text-gray-600 dark:text-gray-400">{item.unit}</span>
+                      {hasQuantityDifference(instance) && (
+                        <span className="text-xs text-[#EA776C] whitespace-nowrap">{t('was')} {instance.orderedQuantity}</span>
+                      )}
                     </div>
+                    
+                    {/* Row 3: Full-width Action Buttons */}
+                    {instance.confirmed === null ? (
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleConfirm(item.itemName, instance.id)}
+                          className="flex-1 h-11 flex items-center justify-center gap-2 bg-[#476a30] hover:bg-[#3d5a28] active:bg-[#34501f] text-white rounded-xl transition-colors text-sm font-semibold shadow-sm"
+                        >
+                          <Check className="w-5 h-5" />
+                          <span>{t('confirm')}</span>
+                        </button>
+                        <button
+                          onClick={() => handleDeny(item.itemName, instance.id)}
+                          className="flex-1 h-11 flex items-center justify-center gap-2 bg-[#EA776C] hover:bg-[#d4665c] active:bg-[#c4564b] text-white rounded-xl transition-colors text-sm font-semibold shadow-sm"
+                        >
+                          <XIcon className="w-5 h-5" />
+                          <span>{t('deny')}</span>
+                        </button>
+                      </div>
+                    ) : instance.confirmed ? (
+                      <button
+                        onClick={() => handleRevertConfirmation(item.itemName, instance.id)}
+                        className="w-full h-11 flex items-center justify-center gap-2 text-[#476a30] dark:text-[#5a8a3e] bg-[#476a30]/10 dark:bg-[#476a30]/20 hover:bg-[#476a30]/20 dark:hover:bg-[#476a30]/30 active:bg-[#476a30]/30 rounded-xl text-sm font-semibold transition-colors cursor-pointer border border-[#476a30]/20 dark:border-[#476a30]/30"
+                        title={t('clickToRevert')}
+                      >
+                        <Check className="w-5 h-5" />
+                        <span>{t('confirmed')} — {t('clickToRevert')}</span>
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => handleRevertConfirmation(item.itemName, instance.id)}
+                        className="w-full h-11 flex items-center justify-center gap-2 text-[#EA776C] bg-[#EA776C]/10 hover:bg-[#EA776C]/20 active:bg-[#EA776C]/30 rounded-xl text-sm font-semibold transition-colors cursor-pointer border border-[#EA776C]/20"
+                        title={t('clickToRevert')}
+                      >
+                        <XIcon className="w-5 h-5" />
+                        <span>{t('denied')} — {t('clickToRevert')}</span>
+                      </button>
+                    )}
                   </div>
                   
                   {/* Desktop Layout */}
