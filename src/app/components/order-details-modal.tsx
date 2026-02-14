@@ -287,7 +287,7 @@ export function OrderDetailsModal({ order, onClose, onOrderUpdate }: OrderDetail
               >
                 {/* Mobile Layout */}
                 <div className="min-[481px]:hidden">
-                  {/* Row 1: Image + Name + Price */}
+                  {/* Row 1: Image + Name + Price — bigger text */}
                   <div className="flex gap-3 mb-3">
                     <img
                       src={item.image}
@@ -296,50 +296,76 @@ export function OrderDetailsModal({ order, onClose, onOrderUpdate }: OrderDetail
                     />
                     <div className="flex-1 min-w-0 flex items-start justify-between">
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-medium text-gray-900 dark:text-gray-100 text-sm truncate">{item.name}</h3>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">@${item.price.toFixed(2)} / {item.unit}</p>
+                        <h3 className="font-bold text-gray-900 dark:text-gray-100 text-base truncate">{item.name}</h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">@${item.price.toFixed(2)} / {item.unit}</p>
                       </div>
-                      <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 ml-4 flex-shrink-0">${(item.actualQuantity * item.price).toFixed(2)}</p>
+                      <p className="text-base font-bold text-gray-900 dark:text-gray-100 ml-4 flex-shrink-0">${(item.actualQuantity * item.price).toFixed(2)}</p>
                     </div>
                   </div>
                   
-                  {/* Row 2: Quantity Adjuster — centered, full width */}
-                  <div className="flex items-center justify-center gap-2 mb-3">
-                    <div className="flex items-center border border-gray-300 dark:border-gray-600 rounded-xl overflow-hidden">
+                  {/* Row 2: Weight Picker — centered with dual-step buttons on each side */}
+                  <div className="flex flex-col items-center mb-3">
+                    <div className="flex items-center gap-1">
+                      {/* -0.1 */}
                       <button
-                        onClick={() => decrementQuantity(item.id)}
+                        onClick={() => decrementQuantity(item.id, 0.1)}
                         disabled={item.confirmed !== null}
-                        className={`px-3.5 py-3 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 active:bg-gray-300 border-r dark:border-gray-600 transition-colors ${
+                        className={`w-11 h-11 flex items-center justify-center bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 active:bg-gray-300 rounded-xl border border-gray-300 dark:border-gray-600 transition-colors text-xs font-semibold text-gray-700 dark:text-gray-300 ${
                           item.confirmed !== null ? 'opacity-50 cursor-not-allowed' : ''
                         }`}
                       >
-                        <Minus className="w-5 h-5 text-gray-700 dark:text-gray-300" />
+                        -.1
                       </button>
-                      <input
-                        type="number"
-                        step="0.01"
-                        value={item.actualQuantity}
-                        onChange={(e) => handleQuantityChange(item.id, e.target.value)}
-                        disabled={item.confirmed !== null}
-                        className={`w-20 px-2 py-3 text-center text-base font-semibold border-0 focus:outline-none ${
-                          item.confirmed !== null 
-                            ? 'bg-gray-100 dark:bg-gray-700 cursor-not-allowed text-gray-600 dark:text-gray-400' 
-                            : 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100'
-                        } ${hasQuantityDifference(item) ? 'bg-[#EA776C]/10 dark:bg-[#EA776C]/20' : ''}`}
-                      />
+                      {/* -0.01 */}
                       <button
-                        onClick={() => incrementQuantity(item.id)}
+                        onClick={() => decrementQuantity(item.id, 0.01)}
                         disabled={item.confirmed !== null}
-                        className={`px-3.5 py-3 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 active:bg-gray-300 border-l dark:border-gray-600 transition-colors ${
+                        className={`w-11 h-11 flex items-center justify-center bg-gray-50 dark:bg-gray-700/70 hover:bg-gray-100 dark:hover:bg-gray-600 active:bg-gray-200 rounded-xl border border-gray-200 dark:border-gray-600 transition-colors text-xs font-medium text-gray-500 dark:text-gray-400 ${
                           item.confirmed !== null ? 'opacity-50 cursor-not-allowed' : ''
                         }`}
                       >
-                        <Plus className="w-5 h-5 text-gray-700 dark:text-gray-300" />
+                        -.01
+                      </button>
+                      {/* Value display */}
+                      <div className="flex flex-col items-center mx-1">
+                        <input
+                          type="number"
+                          step="0.01"
+                          value={item.actualQuantity}
+                          onChange={(e) => handleQuantityChange(item.id, e.target.value)}
+                          disabled={item.confirmed !== null}
+                          className={`w-20 py-2 text-center text-xl font-bold border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#476a30] ${
+                            item.confirmed !== null 
+                              ? 'bg-gray-100 dark:bg-gray-700 cursor-not-allowed text-gray-500 dark:text-gray-400' 
+                              : 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100'
+                          } ${hasQuantityDifference(item) ? 'bg-[#EA776C]/10 dark:bg-[#EA776C]/20 border-[#EA776C]/40' : ''}`}
+                        />
+                        <span className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{item.unit}</span>
+                      </div>
+                      {/* +0.01 */}
+                      <button
+                        onClick={() => incrementQuantity(item.id, 0.01)}
+                        disabled={item.confirmed !== null}
+                        className={`w-11 h-11 flex items-center justify-center bg-gray-50 dark:bg-gray-700/70 hover:bg-gray-100 dark:hover:bg-gray-600 active:bg-gray-200 rounded-xl border border-gray-200 dark:border-gray-600 transition-colors text-xs font-medium text-gray-500 dark:text-gray-400 ${
+                          item.confirmed !== null ? 'opacity-50 cursor-not-allowed' : ''
+                        }`}
+                      >
+                        +.01
+                      </button>
+                      {/* +0.1 */}
+                      <button
+                        onClick={() => incrementQuantity(item.id, 0.1)}
+                        disabled={item.confirmed !== null}
+                        className={`w-11 h-11 flex items-center justify-center bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 active:bg-gray-300 rounded-xl border border-gray-300 dark:border-gray-600 transition-colors text-xs font-semibold text-gray-700 dark:text-gray-300 ${
+                          item.confirmed !== null ? 'opacity-50 cursor-not-allowed' : ''
+                        }`}
+                      >
+                        +.1
                       </button>
                     </div>
-                    <span className="text-sm text-gray-600 dark:text-gray-400">{item.unit}</span>
+                    {/* "was X" text below the picker */}
                     {hasQuantityDifference(item) && (
-                      <span className="text-xs text-[#EA776C] whitespace-nowrap">{t('was')} {item.orderedQuantity}</span>
+                      <p className="text-xs text-[#EA776C] mt-1.5 font-medium">{t('was')} {item.orderedQuantity} {item.unit}</p>
                     )}
                   </div>
                   

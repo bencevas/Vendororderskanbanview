@@ -358,7 +358,7 @@ export function BatchView({ orders, date, onOrderUpdate }: BatchViewProps) {
 
   return (
     <div className="h-full overflow-y-auto px-3 min-[481px]:px-6 py-3 min-[481px]:py-4">
-      <div className="mb-3 min-[481px]:mb-4">
+      <div className="mb-3 min-[481px]:mb-4 text-center min-[481px]:text-left">
         <h2 className="text-base min-[481px]:text-lg font-semibold text-gray-900 dark:text-gray-100">
           {t('batchProcessing')} - {date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
         </h2>
@@ -394,22 +394,23 @@ export function BatchView({ orders, date, onOrderUpdate }: BatchViewProps) {
           <div key={item.itemName} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3 min-[481px]:p-5">
             {/* Item Header */}
             <div className="flex items-center justify-between mb-3 min-[481px]:mb-4 pb-3 min-[481px]:pb-4 border-b border-gray-200 dark:border-gray-700">
-              <div className="flex items-center gap-2 min-[481px]:gap-4">
+              <div className="flex items-center gap-3 min-[481px]:gap-4 flex-1 min-w-0">
                 <img
                   src={item.image}
                   alt={item.itemName}
-                  className="w-10 h-10 min-[481px]:w-16 min-[481px]:h-16 object-cover rounded-lg bg-gray-100 dark:bg-gray-700"
+                  className="w-14 h-14 min-[481px]:w-16 min-[481px]:h-16 object-cover rounded-lg bg-gray-100 dark:bg-gray-700 flex-shrink-0"
                 />
                 <div className="min-w-0 flex-1">
-                  <h3 className="font-semibold text-gray-900 dark:text-gray-100 text-sm min-[481px]:text-lg truncate">{item.itemName}</h3>
-                  <p className="text-xs min-[481px]:text-sm text-gray-600 dark:text-gray-400 mt-0.5 min-[481px]:mt-1">
+                  <h3 className="font-bold text-gray-900 dark:text-gray-100 text-lg min-[481px]:text-lg truncate">{item.itemName}</h3>
+                  <p className="text-sm min-[481px]:text-sm text-gray-600 dark:text-gray-400 mt-0.5 min-[481px]:mt-1">
                     {item.instances.length} {item.instances.length > 1 ? t('orders') : t('order')} • {getTotalQuantityForItem(item).toFixed(1)} {item.unit}
                   </p>
                 </div>
               </div>
+              {/* Confirm All — desktop only */}
               <button
                 onClick={() => confirmAllForItem(item.itemName)}
-                className="px-3 py-2 min-[481px]:px-4 min-[481px]:py-2 bg-[#476a30] hover:bg-[#3d5a28] active:bg-[#34501f] text-white text-xs min-[481px]:text-sm font-semibold rounded-xl min-[481px]:rounded-lg transition-colors whitespace-nowrap shadow-sm"
+                className="hidden min-[481px]:block px-4 py-2 bg-[#476a30] hover:bg-[#3d5a28] active:bg-[#34501f] text-white text-sm font-semibold rounded-lg transition-colors whitespace-nowrap shadow-sm"
               >
                 {t('confirmAll')}
               </button>
@@ -430,55 +431,81 @@ export function BatchView({ orders, date, onOrderUpdate }: BatchViewProps) {
                 >
                   {/* Mobile Layout */}
                   <div className="min-[481px]:hidden">
-                    {/* Row 1: Order info + Price */}
-                    <div className="flex items-center justify-between mb-2.5">
+                    {/* Row 1: Order info + Price — bigger text */}
+                    <div className="flex items-center justify-between mb-3">
                       <div>
-                        <p className="font-semibold text-gray-900 dark:text-gray-100 text-sm">{instance.orderCode}</p>
-                        <p className="text-xs text-gray-600 dark:text-gray-400">{instance.customerName}</p>
+                        <p className="font-bold text-gray-900 dark:text-gray-100 text-base">{instance.orderCode}</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">{instance.customerName}</p>
                       </div>
                       <div className="text-right">
-                        <p className="text-sm text-gray-900 dark:text-gray-100 font-semibold">${(instance.actualQuantity * instance.price).toFixed(2)}</p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">@${instance.price.toFixed(2)}</p>
+                        <p className="text-base text-gray-900 dark:text-gray-100 font-bold">${(instance.actualQuantity * instance.price).toFixed(2)}</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">@${instance.price.toFixed(2)} / {item.unit}</p>
                       </div>
                     </div>
                     
-                    {/* Row 2: Quantity Adjuster — centered */}
-                    <div className="flex items-center justify-center gap-2 mb-2.5">
-                      <div className="flex items-center border border-gray-300 dark:border-gray-600 rounded-xl overflow-hidden">
+                    {/* Row 2: Weight Picker — centered with dual-step buttons on each side */}
+                    <div className="flex flex-col items-center mb-3">
+                      <div className="flex items-center gap-1">
+                        {/* -0.1 */}
                         <button
-                          onClick={() => decrementQuantity(item.itemName, instance.id)}
+                          onClick={() => decrementQuantity(item.itemName, instance.id, 0.1)}
                           disabled={instance.confirmed !== null}
-                          className={`px-3.5 py-2.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 active:bg-gray-300 border-r dark:border-gray-600 transition-colors ${
+                          className={`w-11 h-11 flex items-center justify-center bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 active:bg-gray-300 rounded-xl border border-gray-300 dark:border-gray-600 transition-colors text-xs font-semibold text-gray-700 dark:text-gray-300 ${
                             instance.confirmed !== null ? 'opacity-50 cursor-not-allowed' : ''
                           }`}
                         >
-                          <Minus className="w-5 h-5 text-gray-700 dark:text-gray-300" />
+                          -.1
                         </button>
-                        <input
-                          type="number"
-                          step="0.01"
-                          value={instance.actualQuantity}
-                          onChange={(e) => handleQuantityChange(item.itemName, instance.id, e.target.value)}
-                          disabled={instance.confirmed !== null}
-                          className={`w-20 px-2 py-2.5 text-center text-base font-semibold border-0 focus:outline-none ${
-                            instance.confirmed !== null
-                              ? 'bg-gray-100 dark:bg-gray-700 cursor-not-allowed text-gray-600 dark:text-gray-400'
-                              : 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100'
-                          } ${hasQuantityDifference(instance) ? 'bg-[#EA776C]/10 dark:bg-[#EA776C]/20' : ''}`}
-                        />
+                        {/* -0.01 */}
                         <button
-                          onClick={() => incrementQuantity(item.itemName, instance.id)}
+                          onClick={() => decrementQuantity(item.itemName, instance.id, 0.01)}
                           disabled={instance.confirmed !== null}
-                          className={`px-3.5 py-2.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 active:bg-gray-300 border-l dark:border-gray-600 transition-colors ${
+                          className={`w-11 h-11 flex items-center justify-center bg-gray-50 dark:bg-gray-700/70 hover:bg-gray-100 dark:hover:bg-gray-600 active:bg-gray-200 rounded-xl border border-gray-200 dark:border-gray-600 transition-colors text-xs font-medium text-gray-500 dark:text-gray-400 ${
                             instance.confirmed !== null ? 'opacity-50 cursor-not-allowed' : ''
                           }`}
                         >
-                          <Plus className="w-5 h-5 text-gray-700 dark:text-gray-300" />
+                          -.01
+                        </button>
+                        {/* Value display */}
+                        <div className="flex flex-col items-center mx-1">
+                          <input
+                            type="number"
+                            step="0.01"
+                            value={instance.actualQuantity}
+                            onChange={(e) => handleQuantityChange(item.itemName, instance.id, e.target.value)}
+                            disabled={instance.confirmed !== null}
+                            className={`w-20 py-2 text-center text-xl font-bold border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#476a30] ${
+                              instance.confirmed !== null
+                                ? 'bg-gray-100 dark:bg-gray-700 cursor-not-allowed text-gray-500 dark:text-gray-400'
+                                : 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100'
+                            } ${hasQuantityDifference(instance) ? 'bg-[#EA776C]/10 dark:bg-[#EA776C]/20 border-[#EA776C]/40' : ''}`}
+                          />
+                          <span className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{item.unit}</span>
+                        </div>
+                        {/* +0.01 */}
+                        <button
+                          onClick={() => incrementQuantity(item.itemName, instance.id, 0.01)}
+                          disabled={instance.confirmed !== null}
+                          className={`w-11 h-11 flex items-center justify-center bg-gray-50 dark:bg-gray-700/70 hover:bg-gray-100 dark:hover:bg-gray-600 active:bg-gray-200 rounded-xl border border-gray-200 dark:border-gray-600 transition-colors text-xs font-medium text-gray-500 dark:text-gray-400 ${
+                            instance.confirmed !== null ? 'opacity-50 cursor-not-allowed' : ''
+                          }`}
+                        >
+                          +.01
+                        </button>
+                        {/* +0.1 */}
+                        <button
+                          onClick={() => incrementQuantity(item.itemName, instance.id, 0.1)}
+                          disabled={instance.confirmed !== null}
+                          className={`w-11 h-11 flex items-center justify-center bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 active:bg-gray-300 rounded-xl border border-gray-300 dark:border-gray-600 transition-colors text-xs font-semibold text-gray-700 dark:text-gray-300 ${
+                            instance.confirmed !== null ? 'opacity-50 cursor-not-allowed' : ''
+                          }`}
+                        >
+                          +.1
                         </button>
                       </div>
-                      <span className="text-sm text-gray-600 dark:text-gray-400">{item.unit}</span>
+                      {/* "was X" text below the picker */}
                       {hasQuantityDifference(instance) && (
-                        <span className="text-xs text-[#EA776C] whitespace-nowrap">{t('was')} {instance.orderedQuantity}</span>
+                        <p className="text-xs text-[#EA776C] mt-1.5 font-medium">{t('was')} {instance.orderedQuantity} {item.unit}</p>
                       )}
                     </div>
                     
@@ -487,14 +514,14 @@ export function BatchView({ orders, date, onOrderUpdate }: BatchViewProps) {
                       <div className="flex gap-2">
                         <button
                           onClick={() => handleConfirm(item.itemName, instance.id)}
-                          className="flex-1 h-11 flex items-center justify-center gap-2 bg-[#476a30] hover:bg-[#3d5a28] active:bg-[#34501f] text-white rounded-xl transition-colors text-sm font-semibold shadow-sm"
+                          className="flex-1 h-12 flex items-center justify-center gap-2 bg-[#476a30] hover:bg-[#3d5a28] active:bg-[#34501f] text-white rounded-xl transition-colors text-sm font-semibold shadow-sm"
                         >
                           <Check className="w-5 h-5" />
                           <span>{t('confirm')}</span>
                         </button>
                         <button
                           onClick={() => handleDeny(item.itemName, instance.id)}
-                          className="flex-1 h-11 flex items-center justify-center gap-2 bg-[#EA776C] hover:bg-[#d4665c] active:bg-[#c4564b] text-white rounded-xl transition-colors text-sm font-semibold shadow-sm"
+                          className="flex-1 h-12 flex items-center justify-center gap-2 bg-[#EA776C] hover:bg-[#d4665c] active:bg-[#c4564b] text-white rounded-xl transition-colors text-sm font-semibold shadow-sm"
                         >
                           <XIcon className="w-5 h-5" />
                           <span>{t('deny')}</span>
@@ -503,7 +530,7 @@ export function BatchView({ orders, date, onOrderUpdate }: BatchViewProps) {
                     ) : instance.confirmed ? (
                       <button
                         onClick={() => handleRevertConfirmation(item.itemName, instance.id)}
-                        className="w-full h-11 flex items-center justify-center gap-2 text-[#476a30] dark:text-[#5a8a3e] bg-[#476a30]/10 dark:bg-[#476a30]/20 hover:bg-[#476a30]/20 dark:hover:bg-[#476a30]/30 active:bg-[#476a30]/30 rounded-xl text-sm font-semibold transition-colors cursor-pointer border border-[#476a30]/20 dark:border-[#476a30]/30"
+                        className="w-full h-12 flex items-center justify-center gap-2 text-[#476a30] dark:text-[#5a8a3e] bg-[#476a30]/10 dark:bg-[#476a30]/20 hover:bg-[#476a30]/20 dark:hover:bg-[#476a30]/30 active:bg-[#476a30]/30 rounded-xl text-sm font-semibold transition-colors cursor-pointer border border-[#476a30]/20 dark:border-[#476a30]/30"
                         title={t('clickToRevert')}
                       >
                         <Check className="w-5 h-5" />
@@ -512,7 +539,7 @@ export function BatchView({ orders, date, onOrderUpdate }: BatchViewProps) {
                     ) : (
                       <button
                         onClick={() => handleRevertConfirmation(item.itemName, instance.id)}
-                        className="w-full h-11 flex items-center justify-center gap-2 text-[#EA776C] bg-[#EA776C]/10 hover:bg-[#EA776C]/20 active:bg-[#EA776C]/30 rounded-xl text-sm font-semibold transition-colors cursor-pointer border border-[#EA776C]/20"
+                        className="w-full h-12 flex items-center justify-center gap-2 text-[#EA776C] bg-[#EA776C]/10 hover:bg-[#EA776C]/20 active:bg-[#EA776C]/30 rounded-xl text-sm font-semibold transition-colors cursor-pointer border border-[#EA776C]/20"
                         title={t('clickToRevert')}
                       >
                         <XIcon className="w-5 h-5" />
